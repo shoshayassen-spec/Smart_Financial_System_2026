@@ -11,16 +11,23 @@ def init_db():
     conn = get_connection()
     cursor = conn.cursor()
     
-    # 1. جدول الفروع
+    # 1. جدول الفروع مع دعم عمود status بأمان
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS branches (
             branch_code TEXT PRIMARY KEY,
             branch_name TEXT NOT NULL,
             city TEXT,
-            target REAL DEFAULT 0.0
+            target REAL DEFAULT 0.0,
+            status TEXT DEFAULT 'نشط'
         )
     """)
     
+    # ترقية تلقائية للجدول القديم في حال لم يكن يحتوي على عمود status
+    try:
+        cursor.execute("ALTER TABLE branches ADD COLUMN status TEXT DEFAULT 'نشط'")
+    except Exception:
+        pass
+
     # 2. جدول المدن
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS cities (
