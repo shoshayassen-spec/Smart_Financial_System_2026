@@ -20,28 +20,38 @@ def render():
         if st.button("💾 حفظ البيانات", type="primary", use_container_width=True):
             if code and name:
                 try:
-                    execute_query("INSERT INTO branches (branch_code, branch_name, city, target) VALUES (?, ?, ?, ?)", 
+                    execute_query("INSERT OR REPLACE INTO branches (branch_code, branch_name, city, target) VALUES (?, ?, ?, ?)", 
                                   (code.strip(), name.strip(), city.strip(), target))
-                    st.success(f"🎉 تم إضافة الفرع [{name}] بنجاح!")
+                    st.success(f"🎉 تم إضافة/تحديث الفرع [{name}] بنجاح!")
                     st.rerun()
                 except Exception as e:
-                    st.error("🚨 خطأ: كود الفرع موجود مسبقاً أو حدثت مشكلة في الحفظ!")
+                    st.error(f"🚨 خطأ في الحفظ: {e}")
             else:
                 st.warning("⚠️ يرجى ملء كود واسم الفرع على الأقل.")
 
     st.markdown("---")
 
-    # 2. عرض الفروع المسجلة (استعلام آمن بـ 4 حقول فقط)
+    # 2. عرض الفروع المسجلة أمان تام
     st.markdown("### 📋 قائمة الفروع المسجلة")
-    df_branches = get_dataframe("SELECT branch_code, branch_name, city, target FROM branches")
+    
+    # جلب الجدول بالكامل تجنباً لأي اختلاف في أسماء الأعمدة
+    df_branches = get_dataframe("SELECT * FROM branches")
 
     if not df_branches.empty:
-        df_branches.columns = ["كود الفرع", "اسم الفرع", "المدينة", "المستهدف الشهري (ريال)"]
-        st.dataframe(df_branches, use_container_width=True)
+        # عرض الأعمدة المتاحة فقط بأمان
+        cols_map = {
+            "branch_code": "كود الفرع",
+            "branch_name": "اسم الفرع",
+            "city": "المدينة",
+            "target": "المستهدف الشهري (ريال)",
+            "status": "الحالة"
+        }
+        df_display = df_branches.rename(columns=cols_map)
+        st.dataframe(df_display, use_container_width=True)
         
         # حذف فرع
         with st.expander("🗑️ حذف فرع"):
-            b_to_del = st.selectbox("اختر الفرع المراد حذفه:", df_branches["كود الفرع"].astype(str) + " - " + df_branches["اسم الفرع"])
+            b_to_del = st.selectbox("اختر الفرع المراد حذفه:", df_branches["branch_code"].astype(str) + " - " + df_branches["branch_name"])
             if st.button("تأكيد الحذف", type="secondary"):
                 del_code = b_to_del.split(" - ")[0]
                 execute_query("DELETE FROM branches WHERE branch_code = ?", (del_code,))
