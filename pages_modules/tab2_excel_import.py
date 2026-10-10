@@ -1,7 +1,52 @@
 import streamlit as st
 import pandas as pd
+import re
 from utils.db_manager import execute_query, get_dataframe
 from pages_modules.tab2_components.tab2_ui import render_month_selector, render_summary_cards, MONTHS
+
+def clean_float(val):
+    """تنظيف وتنقية القيم الرقمية بدقة عالية"""
+    if pd.isna(val):
+        return 0.0
+    if isinstance(val, (int, float)):
+        return float(val)
+    cleaned_str = re.sub(r'[^\d.-]', '', str(val))
+    try:
+        return float(cleaned_str) if cleaned_str else 0.0
+    except:
+        return 0.0
+
+def process_excel_preview(df_excel, col_acc, col_debit, col_credit):
+    """معالجة وحساب الأرقام ومطابقتها قبل الاعتماد"""
+    rows_valid = 0
+    total_rev = 0.0
+    total_exp = 0.0
+    records_to_insert = []
+
+    for row_idx, row in df_excel.iterrows():
+        acc_val = row[col_acc]
+        if pd.isna(acc_val):
+            continue
+
+        acc_name = str(acc_val).strip()
+        if acc_name in ["None", "nan", ""] or any(k == acc_name for k in ["الاسم", "اسم الحساب", "رقم الحساب"]):
+            continue
+
+        val_debit = clean_float(row[col_debit])
+        val_credit = clean_float(row[col_credit])
+
+        if val_debit > 0:
+            total_exp += val_debit
+            records_to_insert.append((acc_name, val_debit, "مصروفات"))
+            rows_valid += 1
+
+        if val_credit > 0:
+            total_rev += val_credit
+            records_to_insert.append((acc_name, val_credit, "إيرادات"))
+            rows_valid += 1
+
+    net_profit = total_rev - total_exp
+    return rows_valid, total_rev, total_exp, net_profit, records_to_insert
 
 def render():
     st.markdown("<div class='main-page-title no-print'>📥 التبويب الثاني: سحب واستيراد ملفات الإكسل الشهري</div>", unsafe_allow_html=True)
@@ -19,7 +64,6 @@ def render():
         df_branch_months = get_dataframe("SELECT DISTINCT month FROM income_statement WHERE branch_code = ?", (selected_b_code,))
         locked_months_for_branch = df_branch_months['month'].tolist() if not df_branch_months.empty else []
 
-        # استدعاء أزرار الشهور بتنسيق 3D
         render_month_selector(selected_b_code, locked_months_for_branch)
 
         active_m = st.session_state.get('active_import_month', None)
@@ -44,10 +88,7 @@ def render():
                 df_excel.columns = col_names
 
                 st.markdown("<div class='glass-panel-3d'>", unsafe_allow_html=True)
-                st.markdown("#### 🔍 معاينة البيانات الأولية للملف:")
-                st.dataframe(df_excel.head(10), use_container_width=True)
-
-                st.markdown("#### 🛠️ تحديد أعمدة الحركة خلال الفترة (لمنع الجمع المزدوج):")
+                st.markdown("#### 🛠️ تحديد أعمدة الحركة ومعاينة الحساب الفوري:")
                 c1, c2, c3 = st.columns(3)
 
                 idx_acc = 1 if len(col_names) > 1 else 0
@@ -61,52 +102,30 @@ def render():
                 with c3:
                     col_credit = st.selectbox("عمود الحركة - دائن (العمود H):", col_names, index=idx_credit)
 
-                if st.button("🚀 تأكيد السحب والترحيل المباشر للقيم", use_container_width=True):
+                # حساب وتجميع أرقام المعاينة فورياً
+                rows_valid, total_rev, total_exp, net_profit, records_to_insert = process_excel_preview(df_excel, col_acc, col_debit, col_credit)
+
+                # عرض كروت المطابقة الفورية للأرقام وسجل عدد السطور
+                st.markdown("---")
+                st.markdown("#### 📊 نتائج المطابقة الفورية للأرقام وسجل السطور المكتشفة:")
+                render_summary_cards(selected_b_select, active_m, rows_valid, total_rev, total_exp, net_profit)
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                # زر الاعتماد النهائي بعد المطابقة
+                if st.button("✅ تأكيد دقة الأرقام واعتمد الترحيل النهائي للقاعدة", use_container_width=True, type="primary"):
                     execute_query("DELETE FROM income_statement WHERE branch_code = ? AND month = ?", (selected_b_code, active_m))
 
-                    rows_imported = 0
-                    total_rev = 0.0
-                    total_exp = 0.0
+                    for acc_name, amount, category in records_to_insert:
+                        execute_query("""
+                            INSERT INTO income_statement (branch_code, month, account_name, amount, category)
+                            VALUES (?, ?, ?, ?, ?)
+                        """, (selected_b_code, active_m, acc_name, amount, category))
 
-                    for row_idx, row in df_excel.iterrows():
-                        acc_name = str(row[col_acc]).strip()
-
-                        if pd.isna(row[col_acc]) or any(k in acc_name for k in ["None", "اسم", "رقم الحساب", "nan", "", "الاسم", "إجمالي", "المجموع", "الرصيد"]):
-                            continue
-
-                        try:
-                            val_debit = float(row[col_debit]) if pd.notna(row[col_debit]) else 0.0
-                        except:
-                            val_debit = 0.0
-
-                        try:
-                            val_credit = float(row[col_credit]) if pd.notna(row[col_credit]) else 0.0
-                        except:
-                            val_credit = 0.0
-
-                        if val_debit > 0:
-                            total_exp += val_debit
-                            execute_query("""
-                                INSERT INTO income_statement (branch_code, month, account_name, amount, category)
-                                VALUES (?, ?, ?, ?, ?)
-                            """, (selected_b_code, active_m, acc_name, val_debit, "مصروفات"))
-                            rows_imported += 1
-
-                        if val_credit > 0:
-                            total_rev += val_credit
-                            execute_query("""
-                                INSERT INTO income_statement (branch_code, month, account_name, amount, category)
-                                VALUES (?, ?, ?, ?, ?)
-                            """, (selected_b_code, active_m, acc_name, val_credit, "إيرادات"))
-                            rows_imported += 1
-
-                    net_profit = total_rev - total_exp
-
-                    # حفظ النتائج في Session State لعرضها باستمرار
                     st.session_state['last_summary_data'] = {
                         'b_select': selected_b_select,
                         'm': active_m,
-                        'rows': rows_imported,
+                        'rows': rows_valid,
                         'rev': total_rev,
                         'exp': total_exp,
                         'profit': net_profit
@@ -114,12 +133,12 @@ def render():
 
                     st.session_state['active_import_month'] = None
                     st.session_state['active_import_branch'] = None
+                    st.success("🎉 تم حفظ وترحيل البيانات بنجاح وتجميد الشهر!")
                     st.rerun()
 
                 st.markdown("</div>", unsafe_allow_html=True)
 
-        # عرض الكروت الإحصائية عند إتمام الترحيل
-        if 'last_summary_data' in st.session_state and st.session_state['last_summary_data']:
+        elif 'last_summary_data' in st.session_state and st.session_state['last_summary_data']:
             s = st.session_state['last_summary_data']
             render_summary_cards(s['b_select'], s['m'], s['rows'], s['rev'], s['exp'], s['profit'])
 
