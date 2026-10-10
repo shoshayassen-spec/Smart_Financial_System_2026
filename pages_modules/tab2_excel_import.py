@@ -1,11 +1,10 @@
 import streamlit as st
 import pandas as pd
 from utils.db_manager import execute_query, get_dataframe
-
-MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"]
+from pages_modules.tab2_components.tab2_ui import render_month_selector, render_summary_cards, MONTHS
 
 def render():
-    st.markdown("<div class='main-header'>📥 التبويب الثاني: سحب واستيراد ملفات الإكسل</div>", unsafe_allow_html=True)
+    st.markdown("<div class='main-page-title no-print'>📥 التبويب الثاني: سحب واستيراد ملفات الإكسل الشهري</div>", unsafe_allow_html=True)
     st.info("💡 قم برفع ملفات القوائم المالية الشهرية وسجلات الحسابات المعتمدة بصيغة XLSX أو CSV.")
 
     branches_df = get_dataframe("SELECT branch_code, branch_name FROM branches")
@@ -20,21 +19,14 @@ def render():
         df_branch_months = get_dataframe("SELECT DISTINCT month FROM income_statement WHERE branch_code = ?", (selected_b_code,))
         locked_months_for_branch = df_branch_months['month'].tolist() if not df_branch_months.empty else []
 
-        st.markdown("### 2️⃣ اضغط على الشهر المطلوب لسحب بياناته (الشهور المكتملة تظهر بحالة مجمدة 🔒):")
-
-        cols = st.columns(6)
-        for idx, m in enumerate(MONTHS):
-            col = cols[idx % 6]
-            is_disabled = m in locked_months_for_branch
-            label = f"🔒 {m}" if is_disabled else f"📅 {m}"
-            if col.button(label, key=f"btn_m_{selected_b_code}_{m}", disabled=is_disabled):
-                st.session_state['active_import_month'] = m
-                st.session_state['active_import_branch'] = selected_b_code
+        # استدعاء واجهة الشهور المحدثة
+        render_month_selector(selected_b_code, locked_months_for_branch)
 
         active_m = st.session_state.get('active_import_month', None)
         active_b = st.session_state.get('active_import_branch', None)
 
         if active_m and active_b == selected_b_code:
+            st.markdown("---")
             st.success(f"✨ تم اختيار **شهر {active_m}** للفرع **[{selected_b_select}]**.")
             uploaded_file = st.file_uploader(f"اختر ملف الإكسل الشهري الخاص بشهر {active_m}", type=["xlsx", "xls", "csv"])
 
@@ -50,7 +42,7 @@ def render():
                 col_names = [f"Unnamed: {i}" for i in range(df_excel.shape[1])]
                 df_excel.columns = col_names
 
-                st.write("🔍 **معاينة البيانات الأولية:**")
+                st.markdown("#### 🔍 معاينة البيانات الأولية للملف:")
                 st.dataframe(df_excel.head(10), use_container_width=True)
 
                 st.markdown("#### 🛠️ تحديد أعمدة الحركة خلال الفترة (لمنع الجمع المزدوج):")
@@ -67,7 +59,7 @@ def render():
                 with c3:
                     col_credit = st.selectbox("عمود الحركة - دائن (العمود H):", col_names, index=idx_credit)
 
-                if st.button("🚀 تأكيد السحب والترحيل المباشر للقيم"):
+                if st.button("🚀 تأكيد السحب والترحيل المباشر للقيم", use_container_width=True):
                     execute_query("DELETE FROM income_statement WHERE branch_code = ? AND month = ?", (selected_b_code, active_m))
 
                     rows_imported = 0
@@ -107,40 +99,26 @@ def render():
                             rows_imported += 1
 
                     net_profit = total_rev - total_exp
-                    status_str = "ربح 🟢" if net_profit >= 0 else "خسارة 🔴"
-                    card_color = "#ECFDF5" if net_profit >= 0 else "#FEF2F2"
-                    border_color = "#10B981" if net_profit >= 0 else "#EF4444"
 
-                    st.markdown(f"""
-                        <div style='background-color: {card_color}; border: 2px solid {border_color}; border-radius: 12px; padding: 20px; margin-top: 20px;'>
-                            <h3>✅ تم سحب البيانات ودقة التجميع 100%!</h3>
-                            <p><b>الفرع:</b> {selected_b_select} | <b>الشهر:</b> {active_m} | <b>عدد الصفوف المرحّلة:</b> {rows_imported}</p>
-                            <hr>
-                            <h4>📊 الخلاصة الحقيقية للقائمة المالية:</h4>
-                            <ul>
-                                <li><b>إجمالي الإيرادات (الدائن الحقيقي):</b> {total_rev:,.2f} ريال</li>
-                                <li><b>إجمالي المصروفات (المدين الحقيقي):</b> {total_exp:,.2f} ريال</li>
-                                <li><b>صافي الربح / الخسارة:</b> <span style='font-size: 20px; font-weight: bold;'>{net_profit:,.2f} ريال ({status_str})</span></li>
-                            </ul>
-                        </div>
-                    """, unsafe_allow_html=True)
+                    # استدعاء كروت النتائج والمؤشرات الفاخرة
+                    render_summary_cards(selected_b_select, active_m, rows_imported, total_rev, total_exp, net_profit)
 
                     st.session_state['active_import_month'] = None
                     st.session_state['active_import_branch'] = None
-                    st.rerun()
     else:
         st.error("⚠️ لا توجد فروع مسجلة! يرجى إضافة فروع أولاً من التبويب الأول.")
 
+    # قسم الإدارة والمسح
     st.markdown("---")
     st.markdown("### 🗑️ مسح وإعادة تنشيط سحب الشهور والفروع")
-    with st.expander("إدارة مسح البيانات لإعادة السحب"):
+    with st.expander("⚙️ إدارة مسح البيانات وإعادة فتح الشهور للسحب"):
         branches_data = get_dataframe("SELECT branch_code, branch_name FROM branches")
         b_options = ["جميع الفروع"] + (branches_data['branch_code'].astype(str) + " - " + branches_data['branch_name'].astype(str)).tolist() if not branches_data.empty else ["جميع الفروع"]
 
         del_branches = st.multiselect("🎯 اختر الفرع / الفروع لمسح بياناتها (اختيار متعدد):", b_options, default=["جميع الفروع"])
         del_months = st.multiselect("📅 اختر الشهر / الشهور المراد مسحها (اختيار متعدد):", MONTHS)
 
-        if st.button("⚠️ تأكيد مسح البيانات وإعادة فتح زر السحب"):
+        if st.button("⚠️ تأكيد مسح البيانات وإعادة فتح زر السحب", use_container_width=True):
             if del_months:
                 selected_codes = [b.split(" - ")[0] for b in del_branches if "جميع الفروع" not in b]
                 for m in del_months:
@@ -149,7 +127,7 @@ def render():
                     else:
                         for code in selected_codes:
                             execute_query("DELETE FROM income_statement WHERE month = ? AND branch_code = ?", (m, code))
-                st.success("✨ تم مسح البيانات المحددة بنجاح واُعيد فتح إمكانية السحب!")
+                st.success("✨ تم مسح البيانات المحددة بنجاح وأُعيد فتح إمكانية السحب!")
                 st.rerun()
             else:
                 st.warning("يرجى تحديد شهر واحد على الأقل للمسح.")
