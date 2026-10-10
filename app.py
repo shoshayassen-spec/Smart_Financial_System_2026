@@ -1,13 +1,17 @@
 import streamlit as st
 
 # -----------------------------------------------------------------------------------
-# [1] إعدادات الصفحة والتصميم العام (RTL & Styles)
+# [1] إعدادات الصفحة والتصميم العام (RTL & 3D Glassmorphic Styles)
 # -----------------------------------------------------------------------------------
 st.set_page_config(
     page_title="النظام المالي الذكي المتقدم 2026",
     page_icon="🌐",
     layout="wide"
 )
+
+# إدارة حالة التبويب الحالي
+if 'active_tab' not in st.session_state:
+    st.session_state['active_tab'] = "tab1"
 
 st.markdown("""
 <style>
@@ -16,7 +20,7 @@ st.markdown("""
         text-align: right;
     }
 
-    /* 1. تصميم عنوان الصفحة بالوسط (3D Card) */
+    /* 1. هيدر عنوان الصفحة بالوسط (Centralized 3D Card Header) */
     .main-header, .main-page-title {
         text-align: center !important;
         margin: 10px auto 25px auto !important;
@@ -45,7 +49,7 @@ st.markdown("""
         background: rgba(28, 37, 65, 0.8);
         border: 1px solid rgba(56, 189, 248, 0.2);
         border-radius: 16px;
-        margin-bottom: 25px;
+        margin-bottom: 20px;
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
     }
     .sidebar-brand-title {
@@ -60,57 +64,40 @@ st.markdown("""
         margin-top: 4px;
     }
 
-    /* 3. تحويل خيارات st.radio إلى كروت 3D زجاجية تفاعلية */
-    div[data-testid="stSidebar"] [data-testid="stRadio"] > div {
-        gap: 12px !important;
-    }
-
-    div[data-testid="stSidebar"] [data-testid="stRadio"] [data-testid="stMarkdownContainer"] p {
-        font-size: 15px !important;
-        font-weight: 700 !important;
-        margin: 0 !important;
-    }
-
-    /* استهداف كبسولة الخيار بالكامل */
-    div[data-testid="stSidebar"] [data-testid="stRadio"] label {
+    /* 3. تحويل كافة أزرار القائمة الجانبية إلى كروت زجاجية 3D فاخرة */
+    [data-testid="stSidebar"] div.stButton > button {
+        width: 100% !important;
         background: linear-gradient(135deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
         border: 1px solid rgba(255, 255, 255, 0.12) !important;
         border-radius: 14px !important;
-        padding: 14px 18px !important;
         color: #CBD5E1 !important;
-        width: 100% !important;
+        font-size: 15px !important;
+        font-weight: 700 !important;
+        padding: 14px 16px !important;
+        text-align: right !important;
+        justify-content: flex-start !important;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35) !important;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        margin-bottom: 2px !important;
+        margin-bottom: 4px !important;
     }
 
-    /* إخفاء دائرة الراديو الافتراضية لجعل الكرت أنيقاً ومسطحاً */
-    div[data-testid="stSidebar"] [data-testid="stRadio"] label [data-testid="stRadioButtonCustomIcon"] {
-        display: none !important;
-    }
-
-    /* تأثير المرور فوق الكروت Hover */
-    div[data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
-        transform: translateY(-3px) scale(1.02) !important;
+    /* تأثير المرور فوق الكرت Hover */
+    [data-testid="stSidebar"] div.stButton > button:hover {
+        transform: translateX(-5px) translateY(-2px) !important;
         border-color: #38BDF8 !important;
         color: #38BDF8 !important;
         box-shadow: 0 8px 22px rgba(56, 189, 248, 0.3) !important;
         background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%) !important;
     }
 
-    /* الكرت المختار والنشط حالياً Active */
-    div[data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked),
-    div[data-testid="stSidebar"] [data-testid="stRadio"] label[data-checked="true"] {
+    /* الكرت المختار والنشط حالياً Active Card */
+    [data-testid="stSidebar"] div.stButton > button[kind="primary"] {
         background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
         border: 1px solid #60A5FA !important;
         color: #FFFFFF !important;
         font-weight: 800 !important;
         box-shadow: 0 8px 25px rgba(37, 99, 235, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
-        transform: scale(1.03) !important;
-    }
-
-    div[data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked) [data-testid="stMarkdownContainer"] p {
-        color: #FFFFFF !important;
+        transform: scale(1.02) !important;
     }
 
     @media print {
@@ -138,7 +125,7 @@ from pages_modules import (
 )
 
 # -----------------------------------------------------------------------------------
-# [3] الهيدر والتنقل في القائمة الجانبية (Sidebar Routing)
+# [3] الهيدر والتنقل في القائمة الجانبية عبر أزرار الكروت 3D
 # -----------------------------------------------------------------------------------
 with st.sidebar:
     st.markdown("""
@@ -148,40 +135,40 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
 
-    menu = st.radio(
-        "اختر التبويب للتنقل:",
-        [
-            "🏢  1. تكويد وبيانات الفروع",
-            "📥  2. سحب واستيراد الإكسل الشهري",
-            "📊  3. استعلام وتقارير الفروع (متعدد)",
-            "🏙️  4. استعلام وتقارير المدن",
-            "📈  5. التجميع المالي والمؤشرات الشاملة",
-            "🌐  6. استجلاء القوالب الذكية (Online)",
-            "⚙️  7. إعدادات النظام وتفريغ الذاكرة"
-        ],
-        label_visibility="collapsed"
-    )
+    # قائمة الأزرار والكروت
+    tabs = [
+        ("🏢  1. تكويد وبيانات الفروع", "tab1"),
+        ("📥  2. سحب واستيراد الإكسل الشهري", "tab2"),
+        ("📊  3. استعلام وتقارير الفروع (متعدد)", "tab3"),
+        ("🏙️  4. استعلام وتقارير المدن", "tab4"),
+        ("📈  5. التجميع المالي والمؤشرات الشاملة", "tab5"),
+        ("🌐  6. استجلاء القوالب الذكية (Online)", "tab6"),
+        ("⚙️  7. إعدادات النظام وتفريغ الذاكرة", "tab7"),
+    ]
+
+    for label, tab_id in tabs:
+        # إذا كان التبويب هو النشط حالياً يأخذ نوع primary ليظهر كرت مضيء بارز
+        btn_type = "primary" if st.session_state['active_tab'] == tab_id else "secondary"
+        if st.button(label, key=f"btn_{tab_id}", type=btn_type, use_container_width=True):
+            st.session_state['active_tab'] = tab_id
+            st.rerun()
 
 # -----------------------------------------------------------------------------------
-# [4] توجيه الصفحة المحددة
+# [4] توجيه الصفحة المحددة حسب Session State
 # -----------------------------------------------------------------------------------
-if "1. تكويد وبيانات الفروع" in menu:
+active = st.session_state['active_tab']
+
+if active == "tab1":
     tab1_branches.render()
-
-elif "2. سحب واستيراد الإكسل الشهري" in menu:
+elif active == "tab2":
     tab2_excel_import.render()
-
-elif "3. استعلام وتقارير الفروع" in menu:
+elif active == "tab3":
     tab3_reports.render()
-
-elif "4. استعلام وتقارير المدن" in menu:
+elif active == "tab4":
     tab4_cities.render()
-
-elif "5. التجميع المالي والمؤشرات الشاملة" in menu:
+elif active == "tab5":
     tab5_consolidation.render()
-
-elif "6. استجلاء القوالب الذكية" in menu:
+elif active == "tab6":
     tab6_online.render()
-
-elif "7. إعدادات النظام وتفريغ الذاكرة" in menu:
+elif active == "tab7":
     tab7_settings.render()
