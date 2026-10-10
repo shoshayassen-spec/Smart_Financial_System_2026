@@ -24,13 +24,12 @@ def render():
 
     city_list = ["جميع المدن"] + cities_df['city'].tolist()
     
-    # 3. عرض شريط التصفية والاختيار
-    selected_city = render_city_selector(city_list)
-
     if selected_city == "جميع المدن":
-        query = "SELECT branch_code, branch_name, city, manager_name, phone, target FROM branches"
+        query = "SELECT * FROM branches"
         branches_data = get_dataframe(query)
     else:
+        query = "SELECT * FROM branches WHERE city = ?"
+        branches_data = get_dataframe(query, (selected_city,))
         query = "SELECT branch_code, branch_name, city, manager_name, phone, target FROM branches WHERE city = ?"
         branches_data = get_dataframe(query, (selected_city,))
 
