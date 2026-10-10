@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from utils.db_manager import get_dataframe
+from utils.db_manager import get_dataframe, execute_query
 
 from pages_modules.tab3_components.tab3_styles import apply_tab3_styles
 from pages_modules.tab3_components.tab3_ui import render_control_bar, render_executive_cards
@@ -22,6 +22,12 @@ def categorize_expense(acc_name):
         return 'مصروفات تشغيلية أخرى', 'ثابتة'
 
 def render():
+    # ضمان وجود عمود year بدون أن يحدث خطأ
+    try:
+        execute_query("ALTER TABLE income_statement ADD COLUMN year TEXT DEFAULT '2026'")
+    except Exception:
+        pass
+
     available = get_available_templates()
     st.session_state['template_list'] = list(available.keys()) if available else []
 
@@ -39,14 +45,13 @@ def render():
 
     clean_month = selected_month_full.split(" ")[0].strip()
     clean_code = str(selected_b_code).strip()
-    target_year = selected_month_full.split(" ")[1].strip() if len(selected_month_full.split(" ")) > 1 else "2026"
 
-    # 3. استعلام متعدد السنوات
+    # 3. جلب بيانات الفرع والشهر بمرونة كاملة تتوافق مع جميع البنيات
     df_data = get_dataframe("""
-        SELECT account_name, amount, category, branch_code, month, year
+        SELECT account_name, amount, category, branch_code, month
         FROM income_statement 
-        WHERE TRIM(branch_code) = ? AND (TRIM(month) = ? OR TRIM(month) = ?) AND (year = ? OR year IS NULL OR year = '')
-    """, (clean_code, clean_month, selected_month_full, target_year))
+        WHERE TRIM(branch_code) = ? AND (TRIM(month) = ? OR TRIM(month) = ?)
+    """, (clean_code, clean_month, selected_month_full))
 
     if df_data.empty:
         df_all = get_dataframe("SELECT account_name, amount, category, branch_code, month FROM income_statement")
