@@ -19,7 +19,7 @@ def render():
         df_branch_months = get_dataframe("SELECT DISTINCT month FROM income_statement WHERE branch_code = ?", (selected_b_code,))
         locked_months_for_branch = df_branch_months['month'].tolist() if not df_branch_months.empty else []
 
-        # استدعاء واجهة الشهور المحدثة
+        # استدعاء أزرار الشهور بتنسيق 3D
         render_month_selector(selected_b_code, locked_months_for_branch)
 
         active_m = st.session_state.get('active_import_month', None)
@@ -28,6 +28,7 @@ def render():
         if active_m and active_b == selected_b_code:
             st.markdown("---")
             st.success(f"✨ تم اختيار **شهر {active_m}** للفرع **[{selected_b_select}]**.")
+            
             uploaded_file = st.file_uploader(f"اختر ملف الإكسل الشهري الخاص بشهر {active_m}", type=["xlsx", "xls", "csv"])
 
             if uploaded_file:
@@ -42,6 +43,7 @@ def render():
                 col_names = [f"Unnamed: {i}" for i in range(df_excel.shape[1])]
                 df_excel.columns = col_names
 
+                st.markdown("<div class='glass-panel-3d'>", unsafe_allow_html=True)
                 st.markdown("#### 🔍 معاينة البيانات الأولية للملف:")
                 st.dataframe(df_excel.head(10), use_container_width=True)
 
@@ -100,15 +102,31 @@ def render():
 
                     net_profit = total_rev - total_exp
 
-                    # استدعاء كروت النتائج والمؤشرات الفاخرة
-                    render_summary_cards(selected_b_select, active_m, rows_imported, total_rev, total_exp, net_profit)
+                    # حفظ النتائج في Session State لعرضها باستمرار
+                    st.session_state['last_summary_data'] = {
+                        'b_select': selected_b_select,
+                        'm': active_m,
+                        'rows': rows_imported,
+                        'rev': total_rev,
+                        'exp': total_exp,
+                        'profit': net_profit
+                    }
 
                     st.session_state['active_import_month'] = None
                     st.session_state['active_import_branch'] = None
+                    st.rerun()
+
+                st.markdown("</div>", unsafe_allow_html=True)
+
+        # عرض الكروت الإحصائية عند إتمام الترحيل
+        if 'last_summary_data' in st.session_state and st.session_state['last_summary_data']:
+            s = st.session_state['last_summary_data']
+            render_summary_cards(s['b_select'], s['m'], s['rows'], s['rev'], s['exp'], s['profit'])
+
     else:
         st.error("⚠️ لا توجد فروع مسجلة! يرجى إضافة فروع أولاً من التبويب الأول.")
 
-    # قسم الإدارة والمسح
+    # قسم إدارة المسح
     st.markdown("---")
     st.markdown("### 🗑️ مسح وإعادة تنشيط سحب الشهور والفروع")
     with st.expander("⚙️ إدارة مسح البيانات وإعادة فتح الشهور للسحب"):
@@ -127,6 +145,10 @@ def render():
                     else:
                         for code in selected_codes:
                             execute_query("DELETE FROM income_statement WHERE month = ? AND branch_code = ?", (m, code))
+                
+                if 'last_summary_data' in st.session_state:
+                    st.session_state['last_summary_data'] = None
+
                 st.success("✨ تم مسح البيانات المحددة بنجاح وأُعيد فتح إمكانية السحب!")
                 st.rerun()
             else:
