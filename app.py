@@ -118,9 +118,15 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------------
-# [2] استدعاء وحدات الصفحات بشكل آمن وبسطر واحد لتفادي أي رموز مخفية
+# [2] استدعاء وحدات الصفحات عبر الاستيراد الصريح المباشر لكل ملف
 # -----------------------------------------------------------------------------------
-from pages_modules import tab1_branches, tab2_excel_import, tab3_reports, tab4_cities, tab5_consolidation, tab6_online, tab7_settings
+import pages_modules.tab1_branches as tab1_branches
+import pages_modules.tab2_excel_import as tab2_excel_import
+import pages_modules.tab3_reports as tab3_reports
+import pages_modules.tab4_cities as tab4_cities
+import pages_modules.tab5_consolidation as tab5_consolidation
+import pages_modules.tab6_online as tab6_online
+import pages_modules.tab7_settings as tab7_settings
 
 # -----------------------------------------------------------------------------------
 # [3] الهيدر والتنقل في القائمة الجانبية عبر أزرار الكروت 3D
@@ -146,4 +152,25 @@ with st.sidebar:
     for label, tab_id in tabs:
         btn_type = "primary" if st.session_state['active_tab'] == tab_id else "secondary"
         if st.button(label, key=f"btn_{tab_id}", type=btn_type, use_container_width=True):
-            st.session_state['active_tab'] = tab_
+            st.session_state['active_tab'] = tab_id
+            st.rerun()
+
+# -----------------------------------------------------------------------------------
+# [4] توجيه الصفحة المحددة حسب Session State
+# -----------------------------------------------------------------------------------
+active = st.session_state['active_tab']
+
+if active == "tab1":
+    tab1_branches.render()
+elif active == "tab2":
+    tab2_excel_import.render()
+elif active == "tab3":
+    tab3_reports.render()
+elif active == "tab4":
+    tab4_cities.render()
+elif active == "tab5":
+    tab5_consolidation.render()
+elif active == "tab6":
+    tab6_online.render()
+elif active == "tab7":
+    tab7_settings.render()
