@@ -10,12 +10,6 @@ YEARS = ["2024", "2025", "2026", "2027"]
 def render():
     st.markdown("<div class='main-page-title no-print'>📥 التبويب الثاني: سحب واستيراد ملفات الإكسل الشهري</div>", unsafe_allow_html=True)
 
-    # التأكد من وجود عمود السنة في قاعدة البيانات تلقائياً
-    try:
-        execute_query("ALTER TABLE income_statement ADD COLUMN year TEXT DEFAULT '2026'")
-    except:
-        pass
-
     branches_df = get_dataframe("SELECT branch_code, branch_name FROM branches")
     if branches_df.empty:
         st.error("⚠️ لا توجد فروع مسجلة! يرجى إضافة فروع أولاً من التبويب الأول.")
@@ -23,18 +17,19 @@ def render():
 
     b_list = (branches_df['branch_code'].astype(str) + " - " + branches_df['branch_name'].astype(str)).tolist()
     
+    # عناصر التحكم العلوية
     col_a, col_b, col_c = st.columns([2, 1, 1])
     with col_a:
         selected_b_select = st.selectbox("🎯 1️⃣ اختر الفرع:", b_list)
     with col_b:
-        selected_year = st.selectbox("📅 اختر السنة:", YEARS, index=2)
+        selected_year = st.selectbox("📅 اختر السنة:", YEARS, index=2) # الافتراضي 2026
     with col_c:
         doc_type = st.radio("📄 2️⃣ نوع القائمة:", ["قائمة دخل", "ميزان مراجعة"], horizontal=True)
 
     selected_b_code = selected_b_select.split(" - ")[0]
     
-    # جلب الشهور المجمدة للفرع والسنة المحددين
-    locked_df = get_dataframe("SELECT DISTINCT month FROM income_statement WHERE branch_code = ? AND year = ?", (selected_b_code, selected_year))
+    # قراءة الشهور المكتملة بناء على الفرع والسنة المحددين
+    locked_df = get_dataframe("SELECT DISTINCT month FROM income_statement WHERE TRIM(branch_code) = ? AND TRIM(year) = ?", (selected_b_code, selected_year))
     locked_months = locked_df['month'].tolist() if not locked_df.empty else []
 
     render_month_selector(selected_b_code, locked_months)
@@ -81,9 +76,10 @@ def render():
             with col_btn:
                 st.markdown("<div class='confirm-btn-container'>", unsafe_allow_html=True)
                 if st.button("✅ اعتمد ورحّل البيانات لقاعدة البيانات", use_container_width=True, type="primary"):
-                    execute_query("DELETE FROM income_statement WHERE branch_code = ? AND month = ? AND year = ?", (selected_b_code, active_m, selected_year))
+                    # حذف الصفوف القديمة المطبقة لنفس الفرع والسنة والشهر لمنع التكرار
+                    execute_query("DELETE FROM income_statement WHERE TRIM(branch_code) = ? AND TRIM(month) = ? AND TRIM(year) = ?", (selected_b_code, active_m, selected_year))
                     for acc, amt, cat in records:
-                        execute_query("INSERT INTO income_statement (branch_code, month, year, account_name, amount, category) VALUES (?, ?, ?, ?, ?, ?)", (selected_b_code, active_m, selected_year, acc, amt, cat))
+                        execute_query("INSERT INTO income_statement (branch_code, year, month, account_name, amount, category) VALUES (?, ?, ?, ?, ?, ?)", (selected_b_code, selected_year, active_m, acc, amt, cat))
 
                     st.session_state['last_summary_data'] = {'b_select': selected_b_select, 'm': active_m, 'year': selected_year, 'rows': rows_valid, 'rev': total_rev, 'exp': total_exp, 'profit': net_profit, 'margin': margin_pct, 'doc': doc_type}
                     st.session_state['active_import_month'] = None
@@ -108,13 +104,15 @@ def render():
         st.markdown("<br>", unsafe_allow_html=True)
         render_preview_cards(s['rev'], s['exp'], s['profit'], s['margin'])
 
-    # قسم إدارة المسح
+    # قسم إدارة المسح والتصفير الشامل
     st.markdown("---")
-    with st.expander("⚙️ إدارة مسح البيانات وإعادة فتح الشهور للسحب"):
-        del_branches = st.multiselect("🎯 اختر الفرع:", ["جميع الفروع"] + b_list, default=["جميع الفروع"])
-        del_months = st.multiselect("📅 اختر الشهر:", MONTHS)
-        if st.button("⚠️ تأكيد مسح البيانات وإعادة فتح زر السحب", use_container_width=True):
-            if delete_import_data(del_branches, del_months):
+    with st.expander("⚙️ إدارة مسح البيانات وتصفير قاعدة البيانات للبدء من جديد"):
+        c_del1, c_del2 = st.columns([3, 1])
+        with c_del1:
+            st.warning("⚠️ يمكنك تصفير كافة البيانات المالية القديمة للبدء على نظافة كاملة بمشروع السنوات المتعددة.")
+        with c_del2:
+            if st.button("🗑️ تصفير كل البيانات المالية", type="secondary", use_container_width=True):
+                execute_query("DELETE FROM income_statement")
                 st.session_state['last_summary_data'] = None
-                st.success("✨ تم مسح البيانات المحددة بنجاح!")
+                st.success("✨ تم تصفير قاعدة البيانات بنجاح! جاهزية كاملة لرفع السنوات.")
                 st.rerun()
