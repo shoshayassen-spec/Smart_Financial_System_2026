@@ -22,69 +22,88 @@ st.markdown("""
         margin: 10px auto 25px auto !important;
         padding: 18px 25px !important;
         background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
-        border: 1px solid rgba(56, 189, 248, 0.3) !important;
+        border: 1px solid rgba(56, 189, 248, 0.35) !important;
         border-radius: 18px !important;
         color: #F8FAFC !important;
         font-size: 24px !important;
         font-weight: 800 !important;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
         backdrop-filter: blur(10px) !important;
         max-width: 900px !important;
     }
 
-    .kpi-card-3d {
-        background: #FFFFFF;
-        padding: 16px;
-        border-radius: 12px;
-        border-right: 5px solid #2563EB;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        margin-bottom: 15px;
-    }
-    .kpi-title { font-size: 14px; color: #64748B; font-weight: bold; }
-    .kpi-value { font-size: 22px; color: #0F172A; font-weight: bold; margin: 5px 0; }
-    .kpi-sub { font-size: 12px; font-weight: bold; }
-    .text-success { color: #10B981; }
-    .text-danger { color: #EF4444; }
-
-    /* 2. تصميم أزرار وقائمة التصفح الجانبية بكروت 3D زجاجية أنيقة */
+    /* 2. تحسين خلفية القائمة الجانبية بالكامل */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%) !important;
-        border-left: 1px solid #334155;
+        background: linear-gradient(180deg, #0B132B 0%, #1C2541 100%) !important;
+        border-left: 1px solid #3A506B !important;
     }
 
-    div[data-testid="stSidebar"] div.stRadio > div {
-        gap: 12px;
+    /* هيدر القائمة الجانبية */
+    .sidebar-brand-box {
+        text-align: center;
+        padding: 18px 12px;
+        background: rgba(28, 37, 65, 0.8);
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        border-radius: 16px;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
     }
-    
-    div[data-testid="stSidebar"] div.stRadio label {
-        background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%) !important;
-        border: 1px solid #334155 !important;
+    .sidebar-brand-title {
+        font-size: 20px;
+        font-weight: 800;
+        color: #38BDF8;
+        margin: 0;
+    }
+    .sidebar-brand-sub {
+        font-size: 12px;
+        color: #94A3B8;
+        margin-top: 4px;
+    }
+
+    /* 3. فرض تحويل خيارات الراديو بالجانب إلى كروت 3D زجاجية فاخرة */
+    div[data-testid="stSidebar"] div[role="radiogroup"] {
+        gap: 14px !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    div[data-testid="stSidebar"] div[role="radiogroup"] label {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
         border-radius: 14px !important;
-        padding: 14px 18px !important;
-        color: #E2E8F0 !important;
-        font-weight: 600 !important;
+        padding: 14px 16px !important;
+        color: #CBD5E1 !important;
         font-size: 15px !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-        transition: all 0.3s ease-in-out !important;
+        font-weight: 700 !important;
         cursor: pointer !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        display: flex !important;
+        align-items: center !important;
     }
 
-    /* تأثير المرور فوق التبويب Hover */
-    div[data-testid="stSidebar"] div.stRadio label:hover {
-        transform: translateY(-3px) scale(1.02) !important;
+    /* تأثير المرور فوق الكروت Hover */
+    div[data-testid="stSidebar"] div[role="radiogroup"] label:hover {
+        transform: translateX(-4px) translateY(-2px) !important;
         border-color: #38BDF8 !important;
-        box-shadow: 0 8px 25px rgba(56, 189, 248, 0.25) !important;
         color: #38BDF8 !important;
+        box-shadow: 0 8px 20px rgba(56, 189, 248, 0.25) !important;
+        background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%) !important;
     }
 
-    /* التبويب النشط والمحدد حالياً Active */
-    div[data-testid="stSidebar"] div.stRadio label[data-checked="true"] {
+    /* التبويب النشط المحدد حالياً Active Card */
+    div[data-testid="stSidebar"] div[role="radiogroup"] label[data-checked="true"] {
         background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
-        border-color: #60A5FA !important;
+        border: 1px solid #60A5FA !important;
         color: #FFFFFF !important;
         font-weight: 800 !important;
-        box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
-        transform: scale(1.03) !important;
+        box-shadow: 0 8px 25px rgba(37, 99, 235, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+        transform: scale(1.02) !important;
+    }
+
+    /* إخفاء دوائر الاختيار الافتراضية للراديو لجعل الكرت نظيفاً ومثمراً */
+    div[data-testid="stSidebar"] div[role="radiogroup"] label div[data-testid="stRadioButtonCustomIcon"] {
+        display: none !important;
     }
 
     @media print {
@@ -92,7 +111,6 @@ st.markdown("""
         .stApp > header { display: none !important; }
         .no-print { display: none !important; }
         .main-header, .main-page-title { font-size: 18pt !important; text-align: center; color: #000 !important; background: none !important; box-shadow: none !important; border: none !important; }
-        .kpi-card-3d { border: 1px solid #ccc !important; box-shadow: none !important; page-break-inside: avoid; }
         body { font-size: 10pt; color: #000; background: #fff !important; direction: rtl; }
         @page { size: A4 portrait; margin: 10mm; }
     }
@@ -113,44 +131,50 @@ from pages_modules import (
 )
 
 # -----------------------------------------------------------------------------------
-# [3] القائمة الجانبية والتنقل (Sidebar Routing)
+# [3] الهيدر والتنقل في القائمة الجانبية (Sidebar Routing)
 # -----------------------------------------------------------------------------------
-st.sidebar.title("🌐 النظام المالي الذكي")
-st.sidebar.caption("إصدار التحليل الشامل 2026")
+with st.sidebar:
+    st.markdown("""
+        <div class="sidebar-brand-box">
+            <div class="sidebar-brand-title">🌐 النظام المالي الذكي</div>
+            <div class="sidebar-brand-sub">إصدار التحليل الشامل 2026</div>
+        </div>
+    """, unsafe_allow_html=True)
 
-menu = st.sidebar.radio(
-    "التنقل بين الصفحات والتبويبات:",
-    [
-        "🏢 1. تكويد وبيانات الفروع",
-        "📥 2. سحب واستيراد الإكسل الشهري",
-        "📊 3. استعلام وتقارير الفروع (متعدد)",
-        "🏙️ 4. استعلام وتقارير المدن",
-        "📈 5. التجميع المالي والمؤشرات الشاملة",
-        "🌐 6. استجلاء القوالب الذكية (Online)",
-        "⚙️ 7. إعدادات النظام وتفريغ الذاكرة"
-    ]
-)
+    menu = st.radio(
+        "اختر التبويب للتنقل:",
+        [
+            "🏢  1. تكويد وبيانات الفروع",
+            "📥  2. سحب واستيراد الإكسل الشهري",
+            "📊  3. استعلام وتقارير الفروع (متعدد)",
+            "🏙️  4. استعلام وتقارير المدن",
+            "📈  5. التجميع المالي والمؤشرات الشاملة",
+            "🌐  6. استجلاء القوالب الذكية (Online)",
+            "⚙️  7. إعدادات النظام وتفريغ الذاكرة"
+        ],
+        label_visibility="collapsed"
+    )
 
 # -----------------------------------------------------------------------------------
 # [4] توجيه الصفحة المحددة
 # -----------------------------------------------------------------------------------
-if menu == "🏢 1. تكويد وبيانات الفروع":
+if "1. تكويد وبيانات الفروع" in menu:
     tab1_branches.render()
 
-elif menu == "📥 2. سحب واستيراد الإكسل الشهري":
+elif "2. سحب واستيراد الإكسل الشهري" in menu:
     tab2_excel_import.render()
 
-elif menu == "📊 3. استعلام وتقارير الفروع (متعدد)":
+elif "3. استعلام وتقارير الفروع" in menu:
     tab3_reports.render()
 
-elif menu == "🏙️ 4. استعلام وتقارير المدن":
+elif "4. استعلام وتقارير المدن" in menu:
     tab4_cities.render()
 
-elif menu == "📈 5. التجميع المالي والمؤشرات الشاملة":
+elif "5. التجميع المالي والمؤشرات الشاملة" in menu:
     tab5_consolidation.render()
 
-elif menu == "🌐 6. استجلاء القوالب الذكية (Online)":
+elif "6. استجلاء القوالب الذكية" in menu:
     tab6_online.render()
 
-elif menu == "⚙️ 7. إعدادات النظام وتفريغ الذاكرة":
+elif "7. إعدادات النظام وتفريغ الذاكرة" in menu:
     tab7_settings.render()
