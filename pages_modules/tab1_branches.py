@@ -1,105 +1,51 @@
 import streamlit as st
 import pandas as pd
-from utils.db_manager import get_dataframe, execute_query
-from pages_modules.tab1_components.tab1_ui import render_branch_form
+from utils.db_manager import execute_query, get_dataframe
 
 def render():
     st.markdown("<div class='main-page-title no-print'>🏢 التبويب الأول: تكويد وإدارة بيانات الفروع</div>", unsafe_allow_html=True)
 
-    # تهيئة حالة التعديل في Session State
-    if 'edit_branch_data' not in st.session_state:
-        st.session_state['edit_branch_data'] = None
+    # 1. إدخال فرع جديد
+    with st.expander("➕ إضافة فرع جديد", expanded=True):
+        col1, col2, col3, col4 = st.columns([1, 2, 2, 1.5])
+        with col1:
+            code = st.text_input("كود الفرع:", placeholder="101")
+        with col2:
+            name = st.text_input("اسم الفرع:", placeholder="فرع الرياض - الرئيسي")
+        with col3:
+            city = st.text_input("المدينة:", placeholder="الرياض")
+        with col4:
+            target = st.number_input("المستهدف الشهري (ريال):", min_value=0.0, value=100000.0, step=5000.0)
 
-    col_list, col_form = st.columns([1.3, 1])
-
-    # 1. قسم قائمة الفروع والإدارة الإجرائية
-    with col_list:
-        st.subheader("📋 قائمة الفروع المسجلة")
-        df_branches = get_dataframe("SELECT branch_code, branch_name, city, target, status FROM branches")
-
-        if not df_branches.empty:
-            st.dataframe(
-                df_branches,
-                column_config={
-                    "branch_code": "كود الفرع",
-                    "branch_name": "اسم الفرع",
-                    "city": "المدينة",
-                    "target": st.column_config.NumberColumn("التارجت (ريال)", format="%.0f ريال"),
-                    "status": "الحالة"
-                },
-                use_container_width=True
-            )
-
-            st.markdown("---")
-            st.subheader("⚙️ إجــــراءات وعمليات الفروع")
-            
-            b_options = (df_branches['branch_code'].astype(str) + " - " + df_branches['branch_name'].astype(str)).tolist()
-            selected_b_str = st.selectbox("🎯 اختر فرع لإدارته وتعديله:", b_options)
-            selected_code = selected_b_str.split(" - ")[0]
-
-            col_edit, col_freeze, col_activate, col_del = st.columns(4)
-
-            # زر التعديل المباشر
-            with col_edit:
-                if st.button("✏️ تعديل البيانات", use_container_width=True):
-                    branch_info = df_branches[df_branches['branch_code'].astype(str) == selected_code].iloc[0].to_dict()
-                    st.session_state['edit_branch_data'] = branch_info
+        if st.button("💾 حفظ البيانات", type="primary", use_container_width=True):
+            if code and name:
+                try:
+                    execute_query("INSERT INTO branches (branch_code, branch_name, city, target) VALUES (?, ?, ?, ?)", 
+                                  (code.strip(), name.strip(), city.strip(), target))
+                    st.success(f"🎉 تم إضافة الفرع [{name}] بنجاح!")
                     st.rerun()
-
-            # زر تجميد
-            with col_freeze:
-                if st.button("❄️ تجميد", use_container_width=True):
-                    execute_query("UPDATE branches SET status = 'مجمد' WHERE branch_code = ?", (selected_code,))
-                    st.toast(f"تم تجميد الفرع [{selected_code}] بنجاح", icon="❄️")
-                    st.rerun()
-
-            # زر تنشيط
-            with col_activate:
-                if st.button("🟢 تنشيط", use_container_width=True):
-                    execute_query("UPDATE branches SET status = 'نشط' WHERE branch_code = ?", (selected_code,))
-                    st.toast(f"تم تنشيط الفرع [{selected_code}] بنجاح", icon="🟢")
-                    st.rerun()
-
-            # زر حذف
-            with col_del:
-                if st.button("🗑️ حذف", use_container_width=True):
-                    execute_query("DELETE FROM branches WHERE branch_code = ?", (selected_code,))
-                    st.toast(f"تم حذف الفرع [{selected_code}] بنجاح", icon="🗑️")
-                    st.rerun()
-        else:
-            st.info("لا توجد فروع مسجلة حتى الآن.")
-
-    # 2. قسم نموذج الإضافة والتعديل على اليمين
-    with col_form:
-        if st.session_state['edit_branch_data']:
-            if st.button("❌ إلغاء التعديل والعودة للإضافة"):
-                st.session_state['edit_branch_data'] = None
-                st.rerun()
-
-        submit_btn, branch_code, branch_name, city, target, status, is_edit_mode = render_branch_form(st.session_state['edit_branch_data'])
-
-        if submit_btn:
-            if not branch_code or not branch_name:
-                st.error("⚠️ يرجى ملء كافة الحقول الأساسية (كود الفرع واسمه).")
+                except Exception as e:
+                    st.error(f"🚨 خطأ: كود الفرع موجود مسبقاً أو حدثت مشكلة في الحفظ!")
             else:
-                if is_edit_mode:
-                    execute_query("""
-                        UPDATE branches 
-                        SET branch_name = ?, city = ?, target = ?, status = ? 
-                        WHERE branch_code = ?
-                    """, (branch_name, city, target, status, branch_code))
-                    st.success(f"✅ تم تحديث بيانات الفرع [{branch_code}] بنجاح!")
-                    st.session_state['edit_branch_data'] = None
-                    st.rerun()
-                else:
-                    # إضافة فرع جديد
-                    check_df = get_dataframe("SELECT branch_code FROM branches WHERE branch_code = ?", (branch_code,))
-                    if not check_df.empty:
-                        st.error(f"⚠️ كود الفرع [{branch_code}] موجود مسبقاً! استخدم زر التعديل إذا كنت تريد تحديثه.")
-                    else:
-                        execute_query("""
-                            INSERT INTO branches (branch_code, branch_name, city, target, status) 
-                            VALUES (?, ?, ?, ?, ?)
-                        """, (branch_code, branch_name, city, target, status))
-                        st.success(f"🎉 تم إضافة الفرع الجديد [{branch_name}] بنجاح!")
-                        st.rerun()
+                st.warning("⚠️ يرجى ملء كود واسم الفرع على الأقل.")
+
+    st.markdown("---")
+
+    # 2. عرض الفروع المسجلة
+    st.markdown("### 📋 قائمة الفروع المسجلة")
+    df_branches = get_dataframe("SELECT branch_code, branch_name, city, target FROM branches")
+
+    if not df_branches.empty:
+        df_branches.columns = ["كود الفرع", "اسم الفرع", "المدينة", "المستهدف الشهري (ريال)"]
+        st.dataframe(df_branches, use_container_width=True)
+        
+        # حذف فرع
+        with st.expander("🗑️ حذف فرع"):
+            b_to_del = st.selectbox("اختر الفرع المراد حذفه:", df_branches["كود الفرع"].astype(str) + " - " + df_branches["اسم الفرع"])
+            if st.button("تأكيد الحذف", type="secondary"):
+                del_code = b_to_del.split(" - ")[0]
+                execute_query("DELETE FROM branches WHERE branch_code = ?", (del_code,))
+                st.success("✨ تم حذف الفرع بنجاح!")
+                st.rerun()
+    else:
+        st.info("💡 لا توجد فروع مسجلة حتى الآن. قم بتمويل القائمة بإضافة فرعك الأول أعلاه.")
