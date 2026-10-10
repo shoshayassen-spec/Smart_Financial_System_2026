@@ -2,12 +2,12 @@ import streamlit as st
 
 def apply_tab3_styles():
     """
-    تنسيقات الواجهة عالية التباين والطباعة الخاصة بالتبويب الثالث
-    مع دعم التباين التلقائي للوضع الداكن والفاتح والكروت المحدثة
+    تنسيقات الواجهة عالية التباين والطباعة الكاملة الخاصة بالتبويب الثالث
+    تصحيح طباعة الـ PDF بالكامل وتباين عناوين المؤشرات والرسوم البيانية
     """
     st.markdown("""
         <style>
-            /* التباين العام للتطبيق */
+            /* 1. التباين العام للتطبيق والوضع الداكن */
             .stApp { 
                 background-color: #0F172A !important; 
                 color: #F8FAFC !important; 
@@ -33,10 +33,10 @@ def apply_tab3_styles():
                 font-size: 16px;
                 font-weight: 800;
                 color: #38BDF8 !important;
-                background: rgba(30, 58, 138, 0.4);
-                padding: 10px;
+                background: rgba(30, 58, 138, 0.5);
+                padding: 12px;
                 border-radius: 8px;
-                border: 1px solid rgba(96, 165, 250, 0.3);
+                border: 1px solid rgba(96, 165, 250, 0.4);
                 margin-top: 10px;
                 margin-bottom: 20px;
             }
@@ -76,9 +76,9 @@ def apply_tab3_styles():
             }
             
             /* ألوان مخصصة لمؤشرات الأداء */
-            .text-success-bright { color: #4ADE80 !important; }
-            .text-warning-bright { color: #FBBF24 !important; }
-            .text-danger-bright { color: #F87171 !important; }
+            .text-success-bright { color: #4ADE80 !important; font-weight: bold; }
+            .text-warning-bright { color: #FBBF24 !important; font-weight: bold; }
+            .text-danger-bright { color: #F87171 !important; font-weight: bold; }
 
             /* صناديق تشخيص الذكاء الاصطناعي والاستشارات */
             .ai-box-success {
@@ -155,30 +155,50 @@ def apply_tab3_styles():
             }
 
             .stDataFrame, .stTable { color: #FFFFFF !important; }
-            
-            /* إعدادات الطباعة المتقدمة */
+
+            /* 2. إصلاح الشامل للطباعة وحل مشكلة قص الصفحة والـ PDF */
             @media print {
-                body, .stApp { 
+                @page {
+                    size: A4 portrait;
+                    margin: 10mm;
+                }
+                html, body, .stApp, .main, .block-container { 
                     background-color: #FFFFFF !important; 
                     color: #000000 !important; 
+                    width: 100% !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
                 }
-                header, footer, .stButton, [data-testid="stSidebar"], .no-print, .math-review-section, .stSelectbox { 
+                header, footer, .stButton, [data-testid="stSidebar"], .no-print, .math-review-section, .stSelectbox, .stCheckbox { 
                     display: none !important; 
+                }
+                .main-page-title {
+                    background: #F1F5F9 !important;
+                    color: #000000 !important;
+                    border: 1px solid #000000 !important;
+                    box-shadow: none !important;
                 }
                 .metric-card-container {
                     border: 1px solid #000000 !important;
                     background: #FFFFFF !important;
                     color: #000000 !important;
+                    box-shadow: none !important;
                 }
                 .metric-title, .metric-value, .metric-sub {
                     color: #000000 !important;
+                    text-shadow: none !important;
                 }
                 .styled-table th {
-                    background-color: #F1F5F9 !important;
+                    background-color: #E2E8F0 !important;
                     color: #000000 !important;
                 }
                 .styled-table td {
                     color: #000000 !important;
+                }
+                /* ضمان ظهور الرسومات والـ Gauges في الطباعة بدون قص */
+                .js-plotly-plot, .plot-container {
+                    page-break-inside: avoid !important;
+                    width: 100% !important;
                 }
             }
         </style>
