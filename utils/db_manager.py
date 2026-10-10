@@ -1,6 +1,5 @@
 import sqlite3
 import pandas as pd
-import os
 
 DB_PATH = "financial_system.db"
 
@@ -11,22 +10,27 @@ def init_db():
     conn = get_connection()
     cursor = conn.cursor()
     
-    # 1. جدول الفروع مع دعم عمود status بأمان
+    # 1. جدول الفروع المحسّن
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS branches (
             branch_code TEXT PRIMARY KEY,
             branch_name TEXT NOT NULL,
+            country TEXT DEFAULT 'المملكة العربية السعودية',
             city TEXT,
             target REAL DEFAULT 0.0,
             status TEXT DEFAULT 'نشط'
         )
     """)
     
-    # ترقية تلقائية للجدول القديم في حال لم يكن يحتوي على عمود status
-    try:
-        cursor.execute("ALTER TABLE branches ADD COLUMN status TEXT DEFAULT 'نشط'")
-    except Exception:
-        pass
+    # إضافة الأعمدة الجديدة تلقائياً إذا لم تكن موجودة
+    for col, col_type in [("country", "TEXT DEFAULT 'المملكة العربية السعودية'"), 
+                          ("city", "TEXT"), 
+                          ("target", "REAL DEFAULT 0.0"), 
+                          ("status", "TEXT DEFAULT 'نشط'")]:
+        try:
+            cursor.execute(f"ALTER TABLE branches ADD COLUMN {col} {col_type}")
+        except Exception:
+            pass
 
     # 2. جدول المدن
     cursor.execute("""
@@ -36,7 +40,7 @@ def init_db():
         )
     """)
     
-    # 3. جدول قائمة الدخل الموحد متعدد السنوات (Clean Standard Schema)
+    # 3. جدول قائمة الدخل الموحد
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS income_statement (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,9 +65,12 @@ def execute_query(query, params=()):
 
 def get_dataframe(query, params=()):
     conn = get_connection()
-    df = pd.read_sql_query(query, conn, params=params)
-    conn.close()
+    try:
+        df = pd.read_sql_query(query, conn, params=params)
+    except Exception:
+        df = pd.DataFrame()
+    finally:
+        conn.close()
     return df
 
-# تشغيل التهيئة عند استدعاء الملف
 init_db()
