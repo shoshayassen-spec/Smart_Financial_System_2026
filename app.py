@@ -1,4 +1,11 @@
+import sys
+import os
+import importlib
 import streamlit as st
+
+# 1. إضافة المجلد الرئيسي والفرعي لمسار النظام لتفادي مشاكل الاستيراد
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from utils.db_manager import init_db
 
 # -----------------------------------------------------------------------------------
@@ -15,7 +22,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# إدارة حالة التبويب الحالي
 if 'active_tab' not in st.session_state:
     st.session_state['active_tab'] = "tab1"
 
@@ -26,7 +32,6 @@ st.markdown("""
         text-align: right;
     }
 
-    /* 1. هيدر عنوان الصفحة بالوسط (Centralized 3D Card Header) */
     .main-header, .main-page-title {
         text-align: center !important;
         margin: 10px auto 25px auto !important;
@@ -42,13 +47,11 @@ st.markdown("""
         max-width: 900px !important;
     }
 
-    /* 2. تحسين خلفية القائمة الجانبية */
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #0B132B 0%, #1C2541 100%) !important;
         border-left: 1px solid #3A506B !important;
     }
 
-    /* هيدر القائمة الجانبية */
     .sidebar-brand-box {
         text-align: center;
         padding: 18px 12px;
@@ -70,7 +73,6 @@ st.markdown("""
         margin-top: 4px;
     }
 
-    /* 3. تحويل كافة أزرار القائمة الجانبية إلى كروت زجاجية 3D فاخرة */
     [data-testid="stSidebar"] div.stButton > button {
         width: 100% !important;
         background: linear-gradient(135deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
@@ -87,7 +89,6 @@ st.markdown("""
         margin-bottom: 4px !important;
     }
 
-    /* تأثير المرور فوق الكرت Hover */
     [data-testid="stSidebar"] div.stButton > button:hover {
         transform: translateX(-5px) translateY(-2px) !important;
         border-color: #38BDF8 !important;
@@ -96,7 +97,6 @@ st.markdown("""
         background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%) !important;
     }
 
-    /* الكرت المختار والنشط حالياً Active Card */
     [data-testid="stSidebar"] div.stButton > button[kind="primary"] {
         background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
         border: 1px solid #60A5FA !important;
@@ -118,18 +118,18 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------------
-# [2] استدعاء وحدات الصفحات عبر الاستيراد الصريح المباشر لكل ملف
+# [2] استدعاء ديناميكي آمن 100% يمنع أخطاء الرموز المخفية والرموز العبرية/العربية
 # -----------------------------------------------------------------------------------
-import pages_modules.tab1_branches as tab1_branches
-import pages_modules.tab2_excel_import as tab2_excel_import
-import pages_modules.tab3_reports as tab3_reports
-import pages_modules.tab4_cities as tab4_cities
-import pages_modules.tab5_consolidation as tab5_consolidation
-import pages_modules.tab6_online as tab6_online
-import pages_modules.tab7_settings as tab7_settings
+tab1_branches = importlib.import_module("pages_modules.tab1_branches")
+tab2_excel_import = importlib.import_module("pages_modules.tab2_excel_import")
+tab3_reports = importlib.import_module("pages_modules.tab3_reports")
+tab4_cities = importlib.import_module("pages_modules.tab4_cities")
+tab5_consolidation = importlib.import_module("pages_modules.tab5_consolidation")
+tab6_online = importlib.import_module("pages_modules.tab6_online")
+tab7_settings = importlib.import_module("pages_modules.tab7_settings")
 
 # -----------------------------------------------------------------------------------
-# [3] الهيدر والتنقل في القائمة الجانبية عبر أزرار الكروت 3D
+# [3] الهيدر والتنقل في القائمة الجانبية
 # -----------------------------------------------------------------------------------
 with st.sidebar:
     st.markdown("""
@@ -156,7 +156,7 @@ with st.sidebar:
             st.rerun()
 
 # -----------------------------------------------------------------------------------
-# [4] توجيه الصفحة المحددة حسب Session State
+# [4] توجيه الصفحة المحددة
 # -----------------------------------------------------------------------------------
 active = st.session_state['active_tab']
 
