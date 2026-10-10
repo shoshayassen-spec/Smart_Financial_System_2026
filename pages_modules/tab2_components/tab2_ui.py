@@ -14,9 +14,26 @@ def apply_tab2_styles():
         div[data-testid="stColumn"] div.stButton > button:hover {
             transform: translateY(-3px) scale(1.03) !important; border-color: #38BDF8 !important; color: #38BDF8 !important;
         }
-        .unified-banner {
+        
+        /* تنسيق زر الاعتماد الخاص المدمج */
+        div.stButton > button[kind="primary"] {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%) !important;
+            border: 1px solid #34D399 !important;
+            color: #FFFFFF !important;
+            font-size: 15px !important;
+            font-weight: 800 !important;
+            padding: 14px 10px !important;
+            border-radius: 12px !important;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
+        }
+        div.stButton > button[kind="primary"]:hover {
+            transform: scale(1.02) !important;
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6) !important;
+        }
+
+        .unified-banner-box {
             background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
-            border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 16px; padding: 18px 22px;
+            border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 16px; padding: 16px 20px;
             margin-bottom: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
         }
     </style>
@@ -33,26 +50,11 @@ def render_month_selector(selected_b_code, locked_months):
             st.session_state['active_import_month'] = m
             st.session_state['active_import_branch'] = selected_b_code
 
-def render_preview_header_and_cards(selected_b_select, active_m, rows_imported, total_rev, total_exp, net_profit, margin_pct, doc_type_label):
+def render_preview_cards(total_rev, total_exp, net_profit, margin_pct):
+    """عرض كروت المؤشرات المالية الثلاثية"""
     status_str = "ربح صافي 🟢" if net_profit >= 0 else "خسارة صافية 🔴"
     profit_color = "#10B981" if net_profit >= 0 else "#EF4444"
 
-    # 1. البانر الموحد المقسم لليمين واليسار
-    st.markdown(f"""
-        <div class="unified-banner">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                <div>
-                    <h3 style="color: #F8FAFC; margin: 0; font-size: 18px;">🎉 معاينة المطابقة الفورية ودقة التجميع 100% ({doc_type_label})</h3>
-                    <p style="color: #CBD5E1; font-size: 13px; margin: 6px 0 0 0;">
-                        <b>الفرع:</b> {selected_b_select} | <b>الشهر:</b> {active_m} | 
-                        <b>الصفوف المكتشفة:</b> <span style="background: rgba(56, 189, 248, 0.2); color: #38BDF8; padding: 2px 8px; border-radius: 8px; font-weight: bold;">{rows_imported} صف</span>
-                    </p>
-                </div>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # 2. كروت المؤشرات الثلاثية الفاخرة
     c1, c2, c3 = st.columns(3)
     with c1:
         st.markdown(f"""

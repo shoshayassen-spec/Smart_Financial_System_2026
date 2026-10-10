@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import time
 from utils.db_manager import execute_query, get_dataframe
-from pages_modules.tab2_components.tab2_ui import render_month_selector, render_preview_header_and_cards, MONTHS
+from pages_modules.tab2_components.tab2_ui import render_month_selector, render_preview_cards, MONTHS
 from pages_modules.tab2_components.tab2_logic import process_excel_preview, delete_import_data
 
 def render():
@@ -33,9 +33,8 @@ def render():
         uploaded_file = st.file_uploader(f"اختر ملف ({doc_type}) الشهري لشهر {active_m}", type=["xlsx", "xls", "csv"])
 
         if uploaded_file:
-            # شريط التقدم الفوري
             progress_bar = st.progress(0, text="⌛ جاري تحليل السطور وفلترة البيانات...")
-            for i in range(1, 101, 20):
+            for i in range(1, 101, 25):
                 time.sleep(0.01)
                 progress_bar.progress(i, text="⌛ جاري مطابقة وتجميع الميزان وقائمة الدخل...")
             progress_bar.empty()
@@ -52,25 +51,50 @@ def render():
             doc_key = "trial_balance" if doc_type == "ميزان مراجعة" else "income"
             rows_valid, total_rev, total_exp, net_profit, margin_pct, records = process_excel_preview(df_excel, col_acc, col_debit, col_credit, doc_key)
 
-            # عرض البانر الموحد والكروت
-            render_preview_header_and_cards(selected_b_select, active_m, rows_valid, total_rev, total_exp, net_profit, margin_pct, doc_type)
+            # -----------------------------------------------------------------------------
+            # [الدمج الجذري]: تقسيم السطر العلوي مناصفة بين النص في اليمين والزر في اليسار
+            # -----------------------------------------------------------------------------
+            st.markdown("<div class='unified-banner-box'>", unsafe_allow_html=True)
+            col_info, col_btn = st.columns([2.2, 1.2])
 
-            st.markdown("<br>", unsafe_allow_html=True)
-            # زر الاعتماد الرئيسي ومحاذاته
-            if st.button("✅ اعتمد ورحّل البيانات النهائية لقاعدة البيانات", use_container_width=True, type="primary"):
-                execute_query("DELETE FROM income_statement WHERE branch_code = ? AND month = ?", (selected_b_code, active_m))
-                for acc, amt, cat in records:
-                    execute_query("INSERT INTO income_statement (branch_code, month, account_name, amount, category) VALUES (?, ?, ?, ?, ?)", (selected_b_code, active_m, acc, amt, cat))
+            with col_info:
+                st.markdown(f"""
+                    <h3 style="color: #F8FAFC; margin: 0; font-size: 17px;">🎉 معاينة المطابقة الفورية ودقة التجميع 100% ({doc_type})</h3>
+                    <p style="color: #CBD5E1; font-size: 13px; margin: 6px 0 0 0;">
+                        <b>الفرع:</b> {selected_b_select} | <b>الشهر:</b> {active_m} | 
+                        <b>الصفوف:</b> <span style="background: rgba(56, 189, 248, 0.2); color: #38BDF8; padding: 2px 8px; border-radius: 8px; font-weight: bold;">{rows_valid} صف</span>
+                    </p>
+                """, unsafe_allow_html=True)
 
-                st.session_state['last_summary_data'] = {'b_select': selected_b_select, 'm': active_m, 'rows': rows_valid, 'rev': total_rev, 'exp': total_exp, 'profit': net_profit, 'margin': margin_pct, 'doc': doc_type}
-                st.session_state['active_import_month'] = None
-                st.session_state['active_import_branch'] = None
-                st.success("🎉 تم تجميد الشهر واعتماد الترحيل بنجاح!")
-                st.rerun()
+            with col_btn:
+                # زر الاعتماد الأخضر في جهة اليسار بالكامل
+                if st.button("✅ اعتمد ورحّل البيانات لقاعدة البيانات", use_container_width=True, type="primary"):
+                    execute_query("DELETE FROM income_statement WHERE branch_code = ? AND month = ?", (selected_b_code, active_m))
+                    for acc, amt, cat in records:
+                        execute_query("INSERT INTO income_statement (branch_code, month, account_name, amount, category) VALUES (?, ?, ?, ?, ?)", (selected_b_code, active_m, acc, amt, cat))
+
+                    st.session_state['last_summary_data'] = {'b_select': selected_b_select, 'm': active_m, 'rows': rows_valid, 'rev': total_rev, 'exp': total_exp, 'profit': net_profit, 'margin': margin_pct, 'doc': doc_type}
+                    st.session_state['active_import_month'] = None
+                    st.session_state['active_import_branch'] = None
+                    st.success("🎉 تم تجميد الشهر واعتماد الترحيل بنجاح!")
+                    st.rerun()
+
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            # عرض الكروت الإحصائية الثلاثية تحت السطر الموحد
+            render_preview_cards(total_rev, total_exp, net_profit, margin_pct)
 
     elif 'last_summary_data' in st.session_state and st.session_state['last_summary_data']:
         s = st.session_state['last_summary_data']
-        render_preview_header_and_cards(s['b_select'], s['m'], s['rows'], s['rev'], s['exp'], s['profit'], s['margin'], s['doc'])
+        st.markdown(f"""
+            <div class="unified-banner-box">
+                <h3 style="color: #F8FAFC; margin: 0; font-size: 17px;">✅ تم اعتماد وتجميد بيانات الشهر بنجاح ({s['doc']})</h3>
+                <p style="color: #CBD5E1; font-size: 13px; margin: 6px 0 0 0;">
+                    <b>الفرع:</b> {s['b_select']} | <b>الشهر:</b> {s['m']} | <b>الصفوف المرحّلة:</b> <span style="color:#38BDF8; font-weight:bold;">{s['rows']} صف</span>
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
+        render_preview_cards(s['rev'], s['exp'], s['profit'], s['margin'])
 
     # قسم إدارة المسح
     st.markdown("---")
