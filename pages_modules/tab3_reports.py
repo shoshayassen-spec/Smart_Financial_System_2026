@@ -22,7 +22,6 @@ def categorize_expense(acc_name):
         return 'مصروفات تشغيلية أخرى', 'ثابتة'
 
 def render():
-    # 1. تهيئة قائمة القوالب ديناميكياً
     available = get_available_templates()
     st.session_state['template_list'] = list(available.keys()) if available else []
 
@@ -38,20 +37,17 @@ def render():
     # 2. عرض شريط التحكم
     selected_b_code, b_name, b_city, b_target, selected_month_full, selected_month, selected_template, show_math = render_control_bar(branches_df, MONTHS)
 
-    # -----------------------------------------------------------------------------
-    # [مطابقة مرنة ذكية]: مطابقة اسم الشهر بكافة الاحتمالات ("يناير" أو "يناير 2026")
-    # -----------------------------------------------------------------------------
     clean_month = selected_month_full.split(" ")[0].strip()
     clean_code = str(selected_b_code).strip()
+    target_year = selected_month_full.split(" ")[1].strip() if len(selected_month_full.split(" ")) > 1 else "2026"
 
-    # 3. جلب واسع وقراءة البيانات المرنة لضمان جلب شهر يناير للفرع 102 فوراً
+    # 3. استعلام متعدد السنوات
     df_data = get_dataframe("""
-        SELECT account_name, amount, category, branch_code, month
+        SELECT account_name, amount, category, branch_code, month, year
         FROM income_statement 
-        WHERE TRIM(branch_code) = ? AND (TRIM(month) = ? OR TRIM(month) = ?)
-    """, (clean_code, clean_month, selected_month_full))
+        WHERE TRIM(branch_code) = ? AND (TRIM(month) = ? OR TRIM(month) = ?) AND (year = ? OR year IS NULL OR year = '')
+    """, (clean_code, clean_month, selected_month_full, target_year))
 
-    # محاولة جلب بديلة إن كانت الشروط أوسع
     if df_data.empty:
         df_all = get_dataframe("SELECT account_name, amount, category, branch_code, month FROM income_statement")
         if not df_all.empty:
@@ -101,10 +97,8 @@ def render():
 
     st.markdown("---")
 
-    # 4. عرض الكروت التنفيذية
     render_executive_cards(total_revenue, cogs_amount, cogs_ratio, total_expense, opex_ratio, net_profit, profit_margin, target_achieved, b_target, bep_val, bep_coverage)
 
-    # 5. عرض محرك القوالب الديناميكي
     render_templates(
         selected_template,
         total_revenue=total_revenue, b_target=b_target, exp_df=exp_df, rev_df=rev_df,
