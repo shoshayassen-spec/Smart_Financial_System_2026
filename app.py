@@ -118,15 +118,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------------
-# [2] استدعاء وحدات الصفحات بشكل مباشر وصحيح
+# [2] استدعاء وحدات الصفحات بشكل آمن وبسطر واحد لتفادي أي رموز مخفية
 # -----------------------------------------------------------------------------------
-from pages_modules import tab1_branches
-from pages_modules import tab2_excel_import
-from pages_modules import tab3_reports
-from pages_modules import tab4_cities
-from pages_modules import tab5_consolidation
-from pages_modules import tab6_online
-from pages_modules import tab7_settings
+from pages_modules import tab1_branches, tab2_excel_import, tab3_reports, tab4_cities, tab5_consolidation, tab6_online, tab7_settings
 
 # -----------------------------------------------------------------------------------
 # [3] الهيدر والتنقل في القائمة الجانبية عبر أزرار الكروت 3D
@@ -139,7 +133,6 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
 
-    # قائمة الأزرار والكروت
     tabs = [
         ("🏢  1. تكويد وبيانات الفروع", "tab1"),
         ("📥  2. سحب واستيراد الإكسل الشهري", "tab2"),
@@ -153,25 +146,4 @@ with st.sidebar:
     for label, tab_id in tabs:
         btn_type = "primary" if st.session_state['active_tab'] == tab_id else "secondary"
         if st.button(label, key=f"btn_{tab_id}", type=btn_type, use_container_width=True):
-            st.session_state['active_tab'] = tab_id
-            st.rerun()
-
-# -----------------------------------------------------------------------------------
-# [4] توجيه الصفحة المحددة حسب Session State
-# -----------------------------------------------------------------------------------
-active = st.session_state['active_tab']
-
-if active == "tab1":
-    tab1_branches.render()
-elif active == "tab2":
-    tab2_excel_import.render()
-elif active == "tab3":
-    tab3_reports.render()
-elif active == "tab4":
-    tab4_cities.render()
-elif active == "tab5":
-    tab5_consolidation.render()
-elif active == "tab6":
-    tab6_online.render()
-elif active == "tab7":
-    tab7_settings.render()
+            st.session_state['active_tab'] = tab_
