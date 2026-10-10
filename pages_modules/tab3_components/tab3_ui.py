@@ -1,109 +1,81 @@
 import streamlit as st
-import streamlit.components.v1 as components
+import pandas as pd
+from utils.db_manager import get_dataframe
 
 def render_control_bar(branches_df, months_list):
-    """
-    شريط التحكم والأزرار الرئيسية في أعلى التبويب الثالث
-    """
-    col_online, col_print, col_template, col_m, col_b = st.columns([1, 0.9, 2.2, 1, 1.2])
+    # 1. جلب السنوات المتاحة ديناميكياً من قاعدة البيانات
+    df_years = get_dataframe("SELECT DISTINCT year FROM income_statement WHERE year IS NOT NULL AND year != '' ORDER BY year DESC")
+    available_years = df_years['year'].tolist() if not df_years.empty else ["2026", "2025"]
 
-    with col_b:
-        b_options = (branches_df['branch_code'].astype(str) + " - " + branches_df['branch_name'].astype(str)).tolist()
-        selected_b_str = st.selectbox("🏢 الفرع المستهدف:", b_options)
-        selected_b_code = selected_b_str.split(" - ")[0]
-        branch_info = branches_df[branches_df['branch_code'].astype(str) == selected_b_code].iloc[0]
-        b_name = branch_info['branch_name']
-        b_city = branch_info['city']
-        b_target = float(branch_info.get('target', 0.0))
+    # إعداد قائمة الفروع للعرض
+    branch_options = branches_df["branch_code"].astype(str) + " - " + branches_df["branch_name"]
 
-    with col_m:
-        selected_month_full = st.selectbox("📅 الفترة المالية:", months_list)
-        selected_month = selected_month_full.split(" ")[0]
+    # --- الجزء العلوي (وسط الصفحة): أزرار التحكم واختيار القالب الشامل ---
+    st.markdown("<div style='margin-bottom: 15px;'>", unsafe_allow_html=True)
+    top_c1, top_c2, top_c3 = st.columns([1.5, 2.5, 1.5])
+    
+    with top_c1:
+        if st.button("🔄 تحديث القوالب", use_container_width=True, key="btn_refresh_ui"):
+            st.rerun()
 
-    with col_template:
-        selected_template = st.selectbox("🎯 نمط العرض والقالب:", st.session_state['template_list'], index=0)
+    with top_c2:
+        template_options = st.session_state.get('template_list', [
+            "🌐 [قالب 1]: لوحة القيادة التنفيذية الشاملة (Dashboard)",
+            "📊 [قالب 2]: التقرير المالي التفصيلي (P&L Standard)",
+            "📈 [قالب 3]: التحليل العامودي والأفقي (Vertical & Horizontal)",
+            "⚖️ [قالب 4]: تقرير نقطة التعادل والهوامش (BEP & Margins)",
+            "🔍 [قالب 5]: الفحص والتدقيق المالي المحاسبي",
+            "🎯 [قالب 6]: تقرير مقارنة الأهداف والأداء (Target Vs Actual)",
+            "📅 [قالب 7]: التقرير الشهري المقارن (Monthly Trend)"
+        ])
+        selected_template = st.selectbox("🎯 نمط العرض والقالب:", template_options, key="selected_template_ui")
 
-    with col_online:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🌐 تحديث القوالب", use_container_width=True):
-            st.toast("🌐 تم تحديث كافة القوالب والمؤشرات المالية المتقدمة بنجاح.", icon="✨")
+    with top_c3:
+        if st.button("🖨️ طباعة / PDF", type="primary", use_container_width=True, key="btn_print_ui"):
+            st.js("window.print()")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    with col_print:
-        st.markdown("<br>", unsafe_allow_html=True)
-        components.html("""
-            <button onclick="window.parent.print()" style="
-                background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%);
-                color: white; border: none; padding: 8px 16px; border-radius: 8px;
-                font-weight: bold; cursor: pointer; width: 100%; height: 38px;
-                font-family: sans-serif; font-size: 14px;">
-                🖨️ طباعة / PDF
-            </button>
-        """, height=45)
+    # --- الجزء السفلي: الفلاتر المترتبة من اليمين إلى اليسار (الفرع - السنة - الشهر) ---
+    st.markdown("<div style='background-color: rgba(255, 255, 255, 0.03); padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.08);'>", unsafe_allow_html=True)
+    f_col1, f_col2, f_col3 = st.columns(3)
 
-    show_math = st.checkbox("📐 إظهار قسم معادلات المراجعة المدرسية في أسفل الصفحة", value=False)
+    with f_col1:
+        selected_branch_str = st.selectbox("🏬 1. اختيار الفرع:", branch_options, key="filter_branch_ui")
 
-    return selected_b_code, b_name, b_city, b_target, selected_month_full, selected_month, selected_template, show_math
+    with f_col2:
+        selected_year = st.selectbox("📅 2. اختيار العام:", available_years, key="filter_year_ui")
+
+    with f_col3:
+        clean_months = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"]
+        selected_month_clean = st.selectbox("🗓️ 3. اختيار الشهر (مع إمكانية البحث):", clean_months, key="filter_month_ui")
+    
+    show_math = st.checkbox("⚠️ إظهار قسم معادلات المراجعة المدرسية في أسفل الصفحة", value=False, key="chk_show_math")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # استخراج بيانات الفرع المختارة
+    selected_b_code = selected_branch_str.split(" - ")[0].strip()
+    branch_row = branches_df[branches_df["branch_code"].astype(str).str.strip() == selected_b_code].iloc[0]
+    
+    b_name = branch_row["branch_name"]
+    b_city = branch_row.get("city", "")
+    b_target = float(branch_row.get("target", 100000.0))
+
+    selected_month_full = f"{selected_month_clean} {selected_year}"
+
+    return selected_b_code, b_name, b_city, b_target, selected_month_full, selected_month_clean, selected_template, show_math
 
 
 def render_executive_cards(total_revenue, cogs_amount, cogs_ratio, total_expense, opex_ratio, net_profit, profit_margin, target_achieved, b_target, bep_val, bep_coverage):
-    """
-    عرض الكروت التنفيذية الستة الرئيسية
-    """
-    c1, c2, c3, c4, c5, c6 = st.columns(6)
+    st.markdown("### 📌 المؤشرات المالية الرئيسية")
+    kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
 
-    with c1:
-        st.markdown(f"""
-            <div class="metric-card-container">
-                <div class="metric-title">💰 إجمالي الإيرادات</div>
-                <div class="metric-value" style="color:#34D399;">{total_revenue:,.2f}</div>
-                <div class="metric-sub">النسبة: 100.0%</div>
-            </div>
-        """, unsafe_allow_html=True)
-
-    with c2:
-        st.markdown(f"""
-            <div class="metric-card-container">
-                <div class="metric-title">📦 تكلفة المبيعات</div>
-                <div class="metric-value" style="color:#FB923C;">{cogs_amount:,.2f}</div>
-                <div class="metric-sub">النسبة: {cogs_ratio:.1f}%</div>
-            </div>
-        """, unsafe_allow_html=True)
-
-    with c3:
-        st.markdown(f"""
-            <div class="metric-card-container">
-                <div class="metric-title">💸 إجمالي المصروفات</div>
-                <div class="metric-value" style="color:#F87171;">{total_expense:,.2f}</div>
-                <div class="metric-sub">النسبة للإيراد: {opex_ratio:.1f}%</div>
-            </div>
-        """, unsafe_allow_html=True)
-
-    with c4:
-        p_color = "#34D399" if net_profit >= 0 else "#F87171"
-        st.markdown(f"""
-            <div class="metric-card-container">
-                <div class="metric-title">📈 صافي الربح / الخسارة</div>
-                <div class="metric-value" style="color:{p_color};">{net_profit:,.2f}</div>
-                <div class="metric-sub">الهامش: {profit_margin:.1f}%</div>
-            </div>
-        """, unsafe_allow_html=True)
-
-    with c5:
-        st.markdown(f"""
-            <div class="metric-card-container">
-                <div class="metric-title">🎯 نسبة تحقيق الهدف</div>
-                <div class="metric-value" style="color:#FBBF24;">{target_achieved:.1f}%</div>
-                <div class="metric-sub">الهدف: {b_target:,.0f}</div>
-            </div>
-        """, unsafe_allow_html=True)
-
-    with c6:
-        st.markdown(f"""
-            <div class="metric-card-container">
-                <div class="metric-title">⚖️ نقطة التعادل (BEP)</div>
-                <div class="metric-value" style="color:#60A5FA;">{bep_val:,.2f}</div>
-                <div class="metric-sub">التغطية: {bep_coverage:.1f}%</div>
-            </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
+    with kpi1:
+        st.metric("💰 إجمالي الإيرادات", f"{total_revenue:,.2f}", "النسبة: 100.0%")
+    with kpi2:
+        st.metric("📦 تكلفة المبيعات", f"{cogs_amount:,.2f}", f"النسبة: {cogs_ratio:.1f}%")
+    with kpi3:
+        st.metric("💸 إجمالي المصروفات", f"{total_expense:,.2f}", f"النسبة للإيراد: {opex_ratio:.1f}%")
+    with kpi4:
+        st.metric("📈 صافي الربح / الخسارة", f"{net_profit:,.2f}", f"الهامش: {profit_margin:.1f}%")
+    with kpi5:
+        st.metric("🎯 نسبة تحقيق الهدف", f"{target_achieved:.1f}%", f"الهدف: {b_target:,.0f}")

@@ -6,8 +6,8 @@ from pages_modules.tab3_components.tab3_styles import apply_tab3_styles
 from pages_modules.tab3_components.tab3_ui import render_control_bar, render_executive_cards
 from pages_modules.tab3_components.tab3_templates import render_templates, get_available_templates
 
-MONTHS = ["يناير 2026", "فبراير 2026", "مارس 2026", "أبريل 2026", "مايو 2026", "يونيو 2026", 
-          "يوليو 2026", "أغسطس 2026", "سبتمبر 2026", "أكتوبر 2026", "نوفمبر 2026", "ديسمبر 2026"]
+MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", 
+          "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"]
 
 def categorize_expense(acc_name):
     """تصنيف المصروفات تلقائياً حسب طبيعة الحساب"""
@@ -22,7 +22,7 @@ def categorize_expense(acc_name):
         return 'مصروفات تشغيلية أخرى', 'ثابتة'
 
 def render():
-    # ضمان وجود عمود year بدون أن يحدث خطأ
+    # 1. ضمان وجود عمود year في الجدول لعدم حدوث أي خطأ أثنناء الاستعلام
     try:
         execute_query("ALTER TABLE income_statement ADD COLUMN year TEXT DEFAULT '2026'")
     except Exception:
@@ -40,25 +40,30 @@ def render():
         st.warning("⚠️ لا توجد فروع مسجلة! يرجى إضافة الفروع أولاً.")
         return
 
-    # 2. عرض شريط التحكم
+    # 2. عرض شريط التحكم المحدث والاستلام التفاعلي لبيانات الفرع والسنة والشهر
     selected_b_code, b_name, b_city, b_target, selected_month_full, selected_month, selected_template, show_math = render_control_bar(branches_df, MONTHS)
 
-    clean_month = selected_month_full.split(" ")[0].strip()
+    clean_month = selected_month.strip()
     clean_code = str(selected_b_code).strip()
+    selected_year = selected_month_full.split(" ")[-1].strip()
 
-    # 3. جلب بيانات الفرع والشهر بمرونة كاملة تتوافق مع جميع البنيات
+    # 3. جلب بيانات الفرع والشهر والسنة بمرونة كاملة تتوافق مع كافة حالات التخزين
     df_data = get_dataframe("""
-        SELECT account_name, amount, category, branch_code, month
+        SELECT account_name, amount, category, branch_code, month, year
         FROM income_statement 
-        WHERE TRIM(branch_code) = ? AND (TRIM(month) = ? OR TRIM(month) = ?)
-    """, (clean_code, clean_month, selected_month_full))
+        WHERE TRIM(branch_code) = ? 
+          AND (TRIM(month) = ? OR TRIM(month) = ?)
+          AND (TRIM(year) = ? OR year IS NULL OR year = '')
+    """, (clean_code, clean_month, selected_month_full, selected_year))
 
+    # مطابقة احتياطية للمرونة
     if df_data.empty:
-        df_all = get_dataframe("SELECT account_name, amount, category, branch_code, month FROM income_statement")
+        df_all = get_dataframe("SELECT account_name, amount, category, branch_code, month, year FROM income_statement")
         if not df_all.empty:
             df_data = df_all[
                 (df_all['branch_code'].astype(str).str.contains(clean_code)) & 
-                (df_all['month'].astype(str).str.contains(clean_month))
+                (df_all['month'].astype(str).str.contains(clean_month)) &
+                (df_all['year'].astype(str).str.contains(selected_year) | df_all['year'].isna())
             ].copy()
 
     if df_data.empty:
