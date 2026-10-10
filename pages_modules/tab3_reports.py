@@ -39,16 +39,26 @@ def render():
     selected_b_code, b_name, b_city, b_target, selected_month_full, selected_month, selected_template, show_math = render_control_bar(branches_df, MONTHS)
 
     # -----------------------------------------------------------------------------
-    # [تنبيه ومعالجة مطابقة اسم الشهر]: استخراج اسم الشهر المجرد بدون السنة ("يناير")
+    # [مطابقة مرنة ذكية]: مطابقة اسم الشهر بكافة الاحتمالات ("يناير" أو "يناير 2026")
     # -----------------------------------------------------------------------------
     clean_month = selected_month_full.split(" ")[0].strip()
+    clean_code = str(selected_b_code).strip()
 
-    # 3. جلب واستخراج الحسابات والبيانات بالاسم المجرد
+    # 3. جلب واسع وقراءة البيانات المرنة لضمان جلب شهر يناير للفرع 102 فوراً
     df_data = get_dataframe("""
-        SELECT account_name, amount, category 
+        SELECT account_name, amount, category, branch_code, month
         FROM income_statement 
-        WHERE branch_code = ? AND month = ?
-    """, (selected_b_code, clean_month))
+        WHERE TRIM(branch_code) = ? AND (TRIM(month) = ? OR TRIM(month) = ?)
+    """, (clean_code, clean_month, selected_month_full))
+
+    # محاولة جلب بديلة إن كانت الشروط أوسع
+    if df_data.empty:
+        df_all = get_dataframe("SELECT account_name, amount, category, branch_code, month FROM income_statement")
+        if not df_all.empty:
+            df_data = df_all[
+                (df_all['branch_code'].astype(str).str.contains(clean_code)) & 
+                (df_all['month'].astype(str).str.contains(clean_month))
+            ].copy()
 
     if df_data.empty:
         st.warning(f"🚨 لا توجد بيانات مالية مسحوبة لـ **[{b_name}]** عن **{selected_month_full}**.")
