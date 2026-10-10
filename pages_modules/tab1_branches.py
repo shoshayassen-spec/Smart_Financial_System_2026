@@ -20,8 +20,8 @@ def render():
         if st.button("💾 حفظ البيانات", type="primary", use_container_width=True):
             if code and name:
                 try:
-                    execute_query("INSERT INTO branches (branch_code, branch_name, city, target, status) VALUES (?, ?, ?, ?, ?)", 
-                                  (code.strip(), name.strip(), city.strip(), target, 'نشط'))
+                    execute_query("INSERT INTO branches (branch_code, branch_name, city, target) VALUES (?, ?, ?, ?)", 
+                                  (code.strip(), name.strip(), city.strip(), target))
                     st.success(f"🎉 تم إضافة الفرع [{name}] بنجاح!")
                     st.rerun()
                 except Exception as e:
@@ -31,7 +31,7 @@ def render():
 
     st.markdown("---")
 
-    # 2. عرض الفروع المسجلة
+    # 2. عرض الفروع المسجلة (استعلام آمن بـ 4 حقول فقط)
     st.markdown("### 📋 قائمة الفروع المسجلة")
     df_branches = get_dataframe("SELECT branch_code, branch_name, city, target FROM branches")
 
