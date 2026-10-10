@@ -118,17 +118,15 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------------
-# [2] استدعاء وحدات الصفحات من المجلد الفرعي (pages_modules)
+# [2] استدعاء وحدات الصفحات بشكل مباشر وصحيح
 # -----------------------------------------------------------------------------------
-from pages_modules import (
-    tab1_branches,
-    tab2_excel_import,
-    tab3_reports,
-    tab4_cities,
-    tab5_consolidation,
-    tab6_online,
-    tab7_settings
-)
+from pages_modules import tab1_branches
+from pages_modules import tab2_excel_import
+from pages_modules import tab3_reports
+from pages_modules import tab4_cities
+from pages_modules import tab5_consolidation
+from pages_modules import tab6_online
+from pages_modules import tab7_settings
 
 # -----------------------------------------------------------------------------------
 # [3] الهيدر والتنقل في القائمة الجانبية عبر أزرار الكروت 3D
@@ -153,7 +151,6 @@ with st.sidebar:
     ]
 
     for label, tab_id in tabs:
-        # إذا كان التبويب هو النشط حالياً يأخذ نوع primary ليظهر كرت مضيء بارز
         btn_type = "primary" if st.session_state['active_tab'] == tab_id else "secondary"
         if st.button(label, key=f"btn_{tab_id}", type=btn_type, use_container_width=True):
             st.session_state['active_tab'] = tab_id
