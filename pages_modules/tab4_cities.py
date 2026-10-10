@@ -24,19 +24,21 @@ def render():
 
     city_list = ["جميع المدن"] + cities_df['city'].tolist()
     
+    # 3. عرض شريط التصفية والاختيار وتعريف المتغير selected_city
+    selected_city = render_city_selector(city_list)
+
+    # 4. الاستعلام حسب المدينة المختارة
     if selected_city == "جميع المدن":
         query = "SELECT * FROM branches"
         branches_data = get_dataframe(query)
     else:
         query = "SELECT * FROM branches WHERE city = ?"
         branches_data = get_dataframe(query, (selected_city,))
-        query = "SELECT branch_code, branch_name, city, manager_name, phone, target FROM branches WHERE city = ?"
-        branches_data = get_dataframe(query, (selected_city,))
 
-    # 4. حساب وعرض الكروت الإحصائية
+    # 5. حساب وعرض الكروت الإحصائية
     branch_count = len(branches_data)
-    total_target = branches_data['target'].sum() if 'target' in branches_data.columns else 0.0
+    total_target = float(branches_data['target'].sum()) if ('target' in branches_data.columns and not branches_data.empty) else 0.0
     render_city_kpi_cards(branch_count, total_target)
 
-    # 5. عرض جدول البيانات
+    # 6. عرض جدول البيانات
     render_city_branches_table(branches_data, selected_city)
