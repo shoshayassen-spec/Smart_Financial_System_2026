@@ -2,10 +2,9 @@ import streamlit as st
 import pandas as pd
 from utils.db_manager import get_dataframe
 
-# استدعاء المكونات الموديلية الثلاثة المقسمة
 from pages_modules.tab3_components.tab3_styles import apply_tab3_styles
 from pages_modules.tab3_components.tab3_ui import render_control_bar, render_executive_cards
-from pages_modules.tab3_components.tab3_templates import render_templates
+from pages_modules.tab3_components.tab3_templates import render_templates, get_available_templates
 
 MONTHS = ["يناير 2026", "فبراير 2026", "مارس 2026", "أبريل 2026", "مايو 2026", "يونيو 2026", 
           "يوليو 2026", "أغسطس 2026", "سبتمبر 2026", "أكتوبر 2026", "نوفمبر 2026", "ديسمبر 2026"]
@@ -23,19 +22,10 @@ def categorize_expense(acc_name):
         return 'مصروفات تشغيلية أخرى', 'ثابتة'
 
 def render():
-    # 1. تهيئة قائمة القوالب لجميع الجلسات الجديدة
-    if 'template_list' not in st.session_state:
-        st.session_state['template_list'] = [
-            "🌐 [قالب 1]: لوحة القيادة التنفيذية الشاملة (Master Executive Dashboard)",
-            "⚖️ [قالب 2]: كشف الحساب المتقابل والتحليل الرأسي والتصنيفات (Vertical & Cost Classification)",
-            "📈 [قالب 3]: تحليلات منحنيات وتمركز التكاليف والاتجاهات (Cost Curves & Trend Analysis)",
-            "🧠 [قالب 4]: تشخيص الذكاء الاصطناعي وجودة الأرباح والتنبؤ (AI Diagnostic & Earnings Quality)",
-            "💎 [قالب 5]: منصة تحليل نقطة التعادل والرفع التشغيلي (Bloomberg BEP & Leverage)",
-            "🚀 [قالب 6]: كشف التدفقات النقدية والأداء التشغيلي (Cash Flow Matrix)",
-            "📊 [قالب 7]: المقارنة المرجعية المعيارية والربحية المتقدمة (Peer Benchmarking & Advanced Profitability)"
-        ]
+    # 1. تهيئة قائمة القوالب ديناميكياً
+    available = get_available_templates()
+    st.session_state['template_list'] = list(available.keys()) if available else []
 
-    # 2. تطبيق التنسيقات البصرية والجماليات (من الملف الأول)
     apply_tab3_styles()
 
     st.markdown("<div class='main-page-title no-print'>📊 منصة التحليل المالي المتقدم واستعلام تقارير الفروع</div>", unsafe_allow_html=True)
@@ -45,10 +35,10 @@ def render():
         st.warning("⚠️ لا توجد فروع مسجلة! يرجى إضافة الفروع أولاً.")
         return
 
-    # 3. عرض شريط التحكم والأزرار القابلة للتفاعل (من الملف الثاني)
+    # 2. عرض شريط التحكم
     selected_b_code, b_name, b_city, b_target, selected_month_full, selected_month, selected_template, show_math = render_control_bar(branches_df, MONTHS)
 
-    # 4. جلب واستخراج الحسابات والبيانات الحقيقية
+    # 3. جلب واستخراج الحسابات
     df_data = get_dataframe("""
         SELECT account_name, amount, category 
         FROM income_statement 
@@ -96,14 +86,18 @@ def render():
 
     st.markdown("---")
 
-    # 5. عرض الكروت التنفيذية الستة (من الملف الثاني)
+    # 4. عرض الكروت التنفيذية
     render_executive_cards(total_revenue, cogs_amount, cogs_ratio, total_expense, opex_ratio, net_profit, profit_margin, target_achieved, b_target, bep_val, bep_coverage)
 
-    # 6. عرض محرك القوالب الـ 7 الشاملة (من الملف الثالث)
+    # 5. عرض محرك القوالب الديناميكي
     render_templates(
-        selected_template, total_revenue, b_target, exp_df, rev_df, total_expense, 
-        net_profit, profit_margin, cost_per_sales_riyal, return_per_expense_riyal, 
-        fixed_costs, variable_costs, cogs_amount, cogs_ratio, target_achieved, 
-        opex_ratio, ebitda, ebitda_margin, ebit, ebit_margin, contribution_margin, 
-        contribution_margin_ratio, bep_val, bep_coverage, dol, df_data, show_math
+        selected_template,
+        total_revenue=total_revenue, b_target=b_target, exp_df=exp_df, rev_df=rev_df,
+        total_expense=total_expense, net_profit=net_profit, profit_margin=profit_margin,
+        cost_per_sales_riyal=cost_per_sales_riyal, return_per_expense_riyal=return_per_expense_riyal,
+        fixed_costs=fixed_costs, variable_costs=variable_costs, cogs_amount=cogs_amount,
+        cogs_ratio=cogs_ratio, target_achieved=target_achieved, opex_ratio=opex_ratio,
+        ebitda=ebitda, ebitda_margin=ebitda_margin, ebit=ebit, ebit_margin=ebit_margin,
+        contribution_margin=contribution_margin, contribution_margin_ratio=contribution_margin_ratio,
+        bep_val=bep_val, bep_coverage=bep_coverage, dol=dol, df_data=df_data, show_math=show_math
     )
