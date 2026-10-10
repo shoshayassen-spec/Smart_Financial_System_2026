@@ -21,8 +21,24 @@ def categorize_expense(acc_name):
     else:
         return 'مصروفات تشغيلية أخرى', 'ثابتة'
 
+def calculate_financial_forecast(branch_code, current_revenue):
+    """حساب التنبؤ المالي الذكي للشهر القادم ومتبقي العام بناءً على التاريخ المالي"""
+    try:
+        df_history = get_dataframe("SELECT amount FROM income_statement WHERE TRIM(branch_code) = ? AND category = 'إيرادات'", (str(branch_code).strip(),))
+        if not df_history.empty and len(df_history) > 1:
+            avg_rev = float(df_history['amount'].mean())
+            growth_rate = (current_revenue - avg_rev) / avg_rev if avg_rev > 0 else 0.05
+            next_month = current_revenue * (1 + max(-0.2, min(0.3, growth_rate)))
+        else:
+            next_month = current_revenue * 1.05
+        
+        remaining_year = next_month * 11  # التقدير لمتبقي أشهر السنة
+        return round(next_month, 2), round(remaining_year, 2)
+    except Exception:
+        return round(current_revenue * 1.05, 2), round(current_revenue * 11.5, 2)
+
 def render():
-    # 1. ضمان وجود عمود year في الجدول لعدم حدوث أي خطأ أثنناء الاستعلام
+    # 1. ضمان وجود عمود year في الجدول لعدم حدوث أي خطأ أثناء الاستعلام
     try:
         execute_query("ALTER TABLE income_statement ADD COLUMN year TEXT DEFAULT '2026'")
     except Exception:
@@ -76,19 +92,25 @@ def render():
     exp_df[['تصنيف_الميزانية', 'طبيعة_التكلفة']] = exp_df['account_name'].apply(lambda x: pd.Series(categorize_expense(x)))
 
     total_revenue = float(rev_df['amount'].sum())
-    total_expense = float(exp_df['amount'].sum())
+    
+    # فصل تكلفة المبيعات COGS عن باقي المصروفات التشغيلية OpEx
+    cogs_df = exp_df[exp_df['تصنيف_الميزانية'] == 'تكلفة المبيعات (COGS)']
+    cogs_amount = float(cogs_df['amount'].sum()) if not cogs_df.empty else (float(exp_df['amount'].sum()) * 0.45)
+    
+    opex_df = exp_df[exp_df['تصنيف_الميزانية'] != 'تكلفة المبيعات (COGS)']
+    opex_amount = float(opex_df['amount'].sum()) if not opex_df.empty else (float(exp_df['amount'].sum()) - cogs_amount)
+
+    total_expense = cogs_amount + opex_amount
     net_profit = total_revenue - total_expense
 
     variable_costs = float(exp_df[exp_df['طبيعة_التكلفة'] == 'متغيرة']['amount'].sum())
     fixed_costs = float(exp_df[exp_df['طبيعة_التكلفة'] == 'ثابتة']['amount'].sum())
 
-    cogs_row = exp_df[exp_df['تصنيف_الميزانية'] == 'تكلفة المبيعات (COGS)']
-    cogs_amount = float(cogs_row['amount'].sum()) if not cogs_row.empty else (total_expense * 0.45)
     cogs_ratio = (cogs_amount / total_revenue * 100) if total_revenue > 0 else 0.0
+    opex_ratio = (opex_amount / total_revenue * 100) if total_revenue > 0 else 0.0
 
     target_achieved = (total_revenue / b_target * 100) if b_target > 0 else 0.0
     profit_margin = (net_profit / total_revenue * 100) if total_revenue > 0 else 0.0
-    opex_ratio = (total_expense / total_revenue * 100) if total_revenue > 0 else 0.0
     
     cost_per_sales_riyal = (total_expense / total_revenue) if total_revenue > 0 else 0.0
     return_per_expense_riyal = (total_revenue / total_expense) if total_expense > 0 else 0.0
@@ -105,10 +127,19 @@ def render():
 
     dol = (contribution_margin / ebit) if ebit > 0 else 1.0
 
+    # حساب التنبؤات المستقبلية
+    next_month_forecast, remaining_year_forecast = calculate_financial_forecast(clean_code, total_revenue)
+
     st.markdown("---")
 
-    render_executive_cards(total_revenue, cogs_amount, cogs_ratio, total_expense, opex_ratio, net_profit, profit_margin, target_achieved, b_target, bep_val, bep_coverage)
+    # عرض كروت المؤشرات والتنبؤ
+    render_executive_cards(
+        total_revenue, cogs_amount, cogs_ratio, opex_amount, opex_ratio, 
+        total_expense, net_profit, profit_margin, target_achieved, b_target, 
+        bep_val, bep_coverage, next_month_forecast, remaining_year_forecast
+    )
 
+    # عرض القالب المالي المختار
     render_templates(
         selected_template,
         total_revenue=total_revenue, b_target=b_target, exp_df=exp_df, rev_df=rev_df,
