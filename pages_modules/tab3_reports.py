@@ -38,12 +38,17 @@ def render():
     # 2. عرض شريط التحكم
     selected_b_code, b_name, b_city, b_target, selected_month_full, selected_month, selected_template, show_math = render_control_bar(branches_df, MONTHS)
 
-    # 3. جلب واستخراج الحسابات
+    # -----------------------------------------------------------------------------
+    # [تنبيه ومعالجة مطابقة اسم الشهر]: استخراج اسم الشهر المجرد بدون السنة ("يناير")
+    # -----------------------------------------------------------------------------
+    clean_month = selected_month_full.split(" ")[0].strip()
+
+    # 3. جلب واستخراج الحسابات والبيانات بالاسم المجرد
     df_data = get_dataframe("""
         SELECT account_name, amount, category 
         FROM income_statement 
         WHERE branch_code = ? AND month = ?
-    """, (selected_b_code, selected_month))
+    """, (selected_b_code, clean_month))
 
     if df_data.empty:
         st.warning(f"🚨 لا توجد بيانات مالية مسحوبة لـ **[{b_name}]** عن **{selected_month_full}**.")
