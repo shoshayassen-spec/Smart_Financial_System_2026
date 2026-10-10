@@ -1,5 +1,11 @@
+import sys
+import os
 import streamlit as st
 import pandas as pd
+
+# ضمان معرفة المسار الرئيسي للنظام
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from utils.db_manager import execute_query, get_dataframe
 
 def render():
