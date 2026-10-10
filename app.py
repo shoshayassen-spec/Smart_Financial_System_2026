@@ -16,7 +16,7 @@ st.markdown("""
         text-align: right;
     }
 
-    /* 1. تصميم هيدر عنوان الصفحة بالوسط (Centralized 3D Glassmorphic Card Header) */
+    /* 1. تصميم عنوان الصفحة بالوسط (3D Card) */
     .main-header, .main-page-title {
         text-align: center !important;
         margin: 10px auto 25px auto !important;
@@ -32,7 +32,7 @@ st.markdown("""
         max-width: 900px !important;
     }
 
-    /* 2. تحسين خلفية القائمة الجانبية بالكامل */
+    /* 2. تحسين خلفية القائمة الجانبية */
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #0B132B 0%, #1C2541 100%) !important;
         border-left: 1px solid #3A506B !important;
@@ -60,50 +60,57 @@ st.markdown("""
         margin-top: 4px;
     }
 
-    /* 3. فرض تحويل خيارات الراديو بالجانب إلى كروت 3D زجاجية فاخرة */
-    div[data-testid="stSidebar"] div[role="radiogroup"] {
-        gap: 14px !important;
-        display: flex !important;
-        flex-direction: column !important;
+    /* 3. تحويل خيارات st.radio إلى كروت 3D زجاجية تفاعلية */
+    div[data-testid="stSidebar"] [data-testid="stRadio"] > div {
+        gap: 12px !important;
     }
 
-    div[data-testid="stSidebar"] div[role="radiogroup"] label {
-        background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        border-radius: 14px !important;
-        padding: 14px 16px !important;
-        color: #CBD5E1 !important;
+    div[data-testid="stSidebar"] [data-testid="stRadio"] [data-testid="stMarkdownContainer"] p {
         font-size: 15px !important;
         font-weight: 700 !important;
-        cursor: pointer !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+        margin: 0 !important;
+    }
+
+    /* استهداف كبسولة الخيار بالكامل */
+    div[data-testid="stSidebar"] [data-testid="stRadio"] label {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-radius: 14px !important;
+        padding: 14px 18px !important;
+        color: #CBD5E1 !important;
+        width: 100% !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35) !important;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        display: flex !important;
-        align-items: center !important;
+        margin-bottom: 2px !important;
+    }
+
+    /* إخفاء دائرة الراديو الافتراضية لجعل الكرت أنيقاً ومسطحاً */
+    div[data-testid="stSidebar"] [data-testid="stRadio"] label [data-testid="stRadioButtonCustomIcon"] {
+        display: none !important;
     }
 
     /* تأثير المرور فوق الكروت Hover */
-    div[data-testid="stSidebar"] div[role="radiogroup"] label:hover {
-        transform: translateX(-4px) translateY(-2px) !important;
+    div[data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
+        transform: translateY(-3px) scale(1.02) !important;
         border-color: #38BDF8 !important;
         color: #38BDF8 !important;
-        box-shadow: 0 8px 20px rgba(56, 189, 248, 0.25) !important;
+        box-shadow: 0 8px 22px rgba(56, 189, 248, 0.3) !important;
         background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%) !important;
     }
 
-    /* التبويب النشط المحدد حالياً Active Card */
-    div[data-testid="stSidebar"] div[role="radiogroup"] label[data-checked="true"] {
+    /* الكرت المختار والنشط حالياً Active */
+    div[data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked),
+    div[data-testid="stSidebar"] [data-testid="stRadio"] label[data-checked="true"] {
         background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
         border: 1px solid #60A5FA !important;
         color: #FFFFFF !important;
         font-weight: 800 !important;
         box-shadow: 0 8px 25px rgba(37, 99, 235, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
-        transform: scale(1.02) !important;
+        transform: scale(1.03) !important;
     }
 
-    /* إخفاء دوائر الاختيار الافتراضية للراديو لجعل الكرت نظيفاً ومثمراً */
-    div[data-testid="stSidebar"] div[role="radiogroup"] label div[data-testid="stRadioButtonCustomIcon"] {
-        display: none !important;
+    div[data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked) [data-testid="stMarkdownContainer"] p {
+        color: #FFFFFF !important;
     }
 
     @media print {
