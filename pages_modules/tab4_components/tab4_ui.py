@@ -4,27 +4,32 @@ import pandas as pd
 import numpy as np
 
 def render_city_header():
-    """هيدر زجاجي فاخر للتبويب الرابع"""
+    """هيدر بطاقات FinTech المتقدمة"""
     st.markdown("""
-        <div style="text-align: center; background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
-                    border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 18px; padding: 20px; margin-bottom: 25px;
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.2);">
-            <h2 style="color: #38BDF8; font-weight: 800; margin: 0; font-size: 22px;">🏙️ التبويب الرابع: منصة تحليلات وتقارير المدن والمناطق</h2>
-            <p style="color: #94A3B8; font-size: 13px; margin-top: 6px; margin-bottom: 0;">تجميع المخرجات المالية، المفاضلة بين الفروع التابعة، وتحليل أداء القطاعات الجغرافية</p>
+        <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
+                    border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 16px; padding: 22px; margin-bottom: 25px;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center;">
+            <div style="display: inline-block; background: rgba(56, 189, 248, 0.15); color: #38BDF8; font-size: 12px; font-weight: 700; padding: 4px 14px; border-radius: 20px; margin-bottom: 8px;">
+                🏛️ منصة إدارة وتحليل المحافظات والقطاعات الجغرافية
+            </div>
+            <h2 style="color: #F8FAFC; font-weight: 800; margin: 0; font-size: 24px;">استجلاء وتقارير أداء المدن والمناطق (City Analytics Hub)</h2>
+            <p style="color: #94A3B8; font-size: 13px; margin-top: 6px; margin-bottom: 0;">مراقبة تجميعية لحظية مع مفاضلة الفروع وترتيب المدن المباشر</p>
         </div>
     """, unsafe_allow_html=True)
 
 
-def render_city_selector(city_list):
-    """شريط اختيار المدينة"""
-    col_sel, _ = st.columns([2, 1])
+def render_city_selector_and_filter(city_list):
+    """شريط التحكم والفلاتر العصرية"""
+    col_sel, col_flt = st.columns([2, 1])
     with col_sel:
-        selected_city = st.selectbox("🎯 اختر المدينة / المنطقة للتحليل المالي المجمع:", city_list)
-    return selected_city
+        selected_city = st.selectbox("🎯 اختر المدينة أو النطاق الجغرافي:", city_list)
+    with col_flt:
+        status_filter = st.selectbox("🔍 تصفية حسب حالة الأداء:", ["جميع الحالات", "🟢 الفروع الرابحة", "🔴 فروع تحتاج تحسين"])
+    return selected_city, status_filter
 
 
 def render_city_kpi_cards(df, selected_city):
-    """عرض كروت الأداء المالي المجمع للمدينة"""
+    """كروت المؤشرات العليا بنمط FinTech"""
     branch_count = len(df)
     total_sales = float(df['actual_sales'].sum())
     total_target = float(df['target'].sum())
@@ -35,96 +40,100 @@ def render_city_kpi_cards(df, selected_city):
 
     with c1:
         st.markdown(f"""
-            <div class="city-card-container" style="border-color: rgba(56, 189, 248, 0.4);">
-                <div class="city-card-title">🏢 فروع المدينة</div>
-                <div class="city-card-value" style="color:#38BDF8;">{branch_count} <span style="font-size:12px;">فروع</span></div>
-                <div style="color:#94A3B8; font-size:11px;">تغطية: {selected_city}</div>
+            <div class="fintech-kpi-card">
+                <div class="fintech-kpi-title">🏢 فروع القطاع</div>
+                <div class="fintech-kpi-val" style="color:#38BDF8;">{branch_count} <span style="font-size:12px;">فرع</span></div>
+                <div class="fintech-kpi-sub">تغطية: {selected_city}</div>
             </div>
         """, unsafe_allow_html=True)
 
     with c2:
         st.markdown(f"""
-            <div class="city-card-container" style="border-color: rgba(245, 158, 11, 0.4);">
-                <div class="city-card-title">💰 إجمالي مبيعات المدينة</div>
-                <div class="city-card-value" style="color:#F59E0B;">{total_sales:,.0f} <span style="font-size:12px;">ريال</span></div>
-                <div style="color:#94A3B8; font-size:11px;">المستهدف: {total_target:,.0f} ريال</div>
+            <div class="fintech-kpi-card">
+                <div class="fintech-kpi-title">💰 إجمالي مبيعات القطاع</div>
+                <div class="fintech-kpi-val" style="color:#F59E0B;">{total_sales:,.0f} <span style="font-size:12px;">ريال</span></div>
+                <div class="fintech-kpi-sub">المستهدف: {total_target:,.0f} ريال</div>
             </div>
         """, unsafe_allow_html=True)
 
     with c3:
-        achieve_color = "#10B981" if achieve_rate >= 100.0 else "#EF4444"
+        ach_color = "#10B981" if achieve_rate >= 100.0 else "#EF4444"
         st.markdown(f"""
-            <div class="city-card-container" style="border-color: {achieve_color};">
-                <div class="city-card-title">🎯 نسبة تحقيق الهدف</div>
-                <div class="city-card-value" style="color:{achieve_color};">{achieve_rate:.1f}%</div>
-                <div style="color:#94A3B8; font-size:11px;">متوسط أداء قطاع المدينة</div>
+            <div class="fintech-kpi-card">
+                <div class="fintech-kpi-title">🎯 نسبة الإنجاز الموحدة</div>
+                <div class="fintech-kpi-val" style="color:{ach_color};">{achieve_rate:.1f}%</div>
+                <div class="fintech-kpi-sub">المعدل المعتمد للمنطقة</div>
             </div>
         """, unsafe_allow_html=True)
 
     with c4:
-        profit_color = "#10B981" if total_profit >= 0 else "#EF4444"
+        prof_color = "#10B981" if total_profit >= 0 else "#EF4444"
         st.markdown(f"""
-            <div class="city-card-container" style="border-color: {profit_color};">
-                <div class="city-card-title">💵 صافي أرباح المدينة</div>
-                <div class="city-card-value" style="color:{profit_color};">{total_profit:,.0f} <span style="font-size:12px;">ريال</span></div>
-                <div style="color:#94A3B8; font-size:11px;">السيولة المجمعة المتبقية</div>
+            <div class="fintech-kpi-card">
+                <div class="fintech-kpi-title">💵 صافي الأرباح المجمعة</div>
+                <div class="fintech-kpi-val" style="color:{prof_color};">{total_profit:,.0f} <span style="font-size:12px;">ريال</span></div>
+                <div class="fintech-kpi-sub">السيولة النقدية المتبقية</div>
             </div>
         """, unsafe_allow_html=True)
 
 
-def render_top_bottom_branches(df, selected_city):
-    """مقارنة أعلى وأدنى الفروع أداءً داخل المدينة"""
-    st.markdown(f"#### 🏆 مفاضلة الفروع داخل مدينة: <span style='color:#38BDF8;'>{selected_city}</span>", unsafe_allow_html=True)
+def render_fintech_branch_cards_grid(df):
+    """شبكة كروت الفروع الحديثة المماثلة لنظام Artifacts القوالب"""
+    st.markdown("#### 📑 كروت أداء الفروع المسجلة (Branch Grid Cards)")
 
-    if len(df) == 0:
-        return
+    cols = st.columns(3)
+    for idx, row in df.iterrows():
+        col_idx = idx % 3
+        
+        branch_name = row.get('branch_name', 'فرع')
+        code = row.get('branch_code', '-')
+        sales = row.get('actual_sales', 0.0)
+        target = row.get('target', 0.0)
+        profit = row.get('net_profit', 0.0)
+        ach = row.get('target_achieved', 0.0)
 
-    # ترتيب الفروع حسب صافي الربح والنسبة
-    top_branch = df.sort_values(by='net_profit', ascending=False).iloc[0]
-    bottom_branch = df.sort_values(by='net_profit', ascending=True).iloc[0]
+        # تحديد الشارات الملونة
+        status_badge = '<span class="badge-green">🟢 ممتاز</span>' if ach >= 100 else ('<span class="badge-yellow">🟡 متوسط</span>' if ach >= 75 else '<span class="badge-red">🔴 متأخر</span>')
+        profit_badge = '<span class="badge-green">رابح</span>' if profit >= 0 else '<span class="badge-red">خاسر</span>'
 
-    col_top, col_bot = st.columns(2)
-
-    with col_top:
-        st.markdown(f"""
-            <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(15, 23, 42, 0.9) 100%);
-                        border: 1px solid #10B981; border-radius: 14px; padding: 18px;">
-                <div style="color: #10B981; font-weight: 800; font-size: 15px;">🥇 أعلى فرع أداءً (الفرع الذهبي)</div>
-                <h3 style="color: #F8FAFC; margin: 8px 0; font-size: 20px;">{top_branch.get('branch_name', 'غير محدد')}</h3>
-                <p style="color: #CBD5E1; font-size: 13px; margin: 0;">
-                    • صافي الربح: <b>{top_branch.get('net_profit', 0.0):,.0f} ريال</b><br>
-                    • نسبة المستهدف: <b>{top_branch.get('target_achieved', 0.0):.1f}%</b><br>
-                    • كود الفرع: <b>{top_branch.get('branch_code', '-')}</b>
-                </p>
-            </div>
-        """, unsafe_allow_html=True)
-
-    with col_bot:
-        st.markdown(f"""
-            <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(15, 23, 42, 0.9) 100%);
-                        border: 1px solid #EF4444; border-radius: 14px; padding: 18px;">
-                <div style="color: #F87171; font-weight: 800; font-size: 15px;">⚠️ أدنى فرع أداءً (يحتاج معالجة)</div>
-                <h3 style="color: #F8FAFC; margin: 8px 0; font-size: 20px;">{bottom_branch.get('branch_name', 'غير محدد')}</h3>
-                <p style="color: #CBD5E1; font-size: 13px; margin: 0;">
-                    • صافي الربح: <b>{bottom_branch.get('net_profit', 0.0):,.0f} ريال</b><br>
-                    • نسبة المستهدف: <b>{bottom_branch.get('target_achieved', 0.0):.1f}%</b><br>
-                    • كود الفرع: <b>{bottom_branch.get('branch_code', '-')}</b>
-                </p>
-            </div>
-        """, unsafe_allow_html=True)
+        with cols[col_idx]:
+            st.markdown(f"""
+                <div class="fintech-grid-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <span style="color:#94A3B8; font-size:11px; font-weight:700;">كود: {code}</span>
+                        <div>{status_badge} {profit_badge}</div>
+                    </div>
+                    <h3 style="color:#F8FAFC; font-size:17px; font-weight:800; margin:0 0 10px 0;">{branch_name}</h3>
+                    <div class="card-metric-row">
+                        <span style="color:#CBD5E1; font-size:12px;">المبيعات الفعلية:</span>
+                        <b style="color:#F59E0B; font-size:13px;">{sales:,.0f} ريال</b>
+                    </div>
+                    <div class="card-metric-row">
+                        <span style="color:#CBD5E1; font-size:12px;">نسبة تحقيق الهدف:</span>
+                        <b style="color:#38BDF8; font-size:13px;">{ach:.1f}%</b>
+                    </div>
+                    <div class="card-metric-row">
+                        <span style="color:#CBD5E1; font-size:12px;">صافي الربح:</span>
+                        <b style="color:{'#10B981' if profit >= 0 else '#EF4444'}; font-size:13px;">{profit:,.0f} ريال</b>
+                    </div>
+                    <div style="border-top: 1px solid rgba(255,255,255,0.08); margin-top:12px; padding-top:10px; display:flex; justify-content:space-between; font-size:11px; color:#64748B;">
+                        <span>تحليل القوالب مفعل</span>
+                        <span>JSON ✅</span>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
 
 
 def render_city_analytics_tabs(df, selected_city):
-    """تطبيق القوالب المتقدمة (BEP, EBITDA, Benchmarking) على مستوى المدينة"""
-    st.markdown("#### 📐 التحليل التشغيلي المتقدم لقوالب المدينة")
+    """تحليلات القوالب المجمعة بتصاميم رسومية متطورة"""
+    st.markdown("#### 📐 منصة القوالب التحليلية المجمعة القطاعية")
 
     tab_bep, tab_ebitda, tab_bench = st.tabs([
-        "💎 [قالب 5]: نقطة تعادل المدينة (BEP)",
-        "🚀 [قالب 6]: كشف EBITDA وتدفقات المدينة",
-        "📊 [قالب 7]: القياس المعياري وترتيب الفروع"
+        "💎 [قالب 5]: التعادل والرافع المالي",
+        "🚀 [قالب 6]: كشف التدفقات وEBITDA",
+        "📊 [قالب 7]: الترتيب والمفاضلة المعيارية"
     ])
 
-    # حساب المجاميع العامة للمدينة
     tot_fixed = float(df['fixed_costs'].sum())
     tot_var = float(df['variable_costs'].sum())
     tot_sales = float(df['actual_sales'].sum())
@@ -134,90 +143,46 @@ def render_city_analytics_tabs(df, selected_city):
     cm_ratio = (cm / tot_sales) if tot_sales > 0 else 0.0
     bep_val = (tot_fixed / cm_ratio) if cm_ratio > 0 else 0.0
 
-    # 1. تبويب نقطة التعادل للمدينة
     with tab_bep:
         c1, c2, c3 = st.columns(3)
-        with c1:
-            st.metric("التكاليف الثابتة المجمعة", f"{tot_fixed:,.0f} ريال")
-        with c2:
-            st.metric("هامش المساهمة للمدينة", f"{cm:,.0f} ريال", f"{cm_ratio*100:.1f}%")
-        with c3:
-            st.metric("مبيعات التعادل المطلوبة (BEP)", f"{bep_val:,.0f} ريال")
+        with c1: st.metric("التكاليف الثابتة", f"{tot_fixed:,.0f} ريال")
+        with c2: st.metric("هامش المساهمة", f"{cm:,.0f} ريال", f"{cm_ratio*100:.1f}%")
+        with c3: st.metric("نقطة التعادل المجمعة", f"{bep_val:,.0f} ريال")
 
-        # رسم بياني للمقارنة بين المبيعات ونقطة التعادل لكل فرع في المدينة
         fig_bep = go.Figure()
-        fig_bep.add_trace(go.Bar(
-            x=df['branch_name'], y=df['actual_sales'],
-            name='المبيعات الحقيقية', marker_color='#38BDF8'
-        ))
-        fig_bep.add_trace(go.Bar(
-            x=df['branch_name'], y=df['fixed_costs'],
-            name='التكاليف الثابتة', marker_color='#EF4444'
-        ))
+        fig_bep.add_trace(go.Bar(x=df['branch_name'], y=df['actual_sales'], name='المبيعات', marker_color='#38BDF8'))
+        fig_bep.add_trace(go.Bar(x=df['branch_name'], y=df['fixed_costs'], name='ت. ثابتة', marker_color='#EF4444'))
         fig_bep.update_layout(
-            title="<b>مبيعات الفروع مقابل التكاليف الثابتة بالمدينة</b>",
             paper_bgcolor="rgba(15, 23, 42, 0.8)", plot_bgcolor="rgba(15, 23, 42, 0.8)",
-            font=dict(color="#CBD5E1"), barmode='group', margin=dict(l=20, r=20, t=40, b=20)
+            font=dict(color="#CBD5E1"), barmode='group', margin=dict(l=20, r=20, t=30, b=20)
         )
         st.plotly_chart(fig_bep, use_container_width=True)
 
-    # 2. تبويب EBITDA للتدفقات النقدية
     with tab_ebitda:
-        ebitda_val = tot_profit + (tot_fixed * 0.15)  # تقدير إهلاك افتراضي
+        ebitda_val = tot_profit + (tot_fixed * 0.15)
         ebitda_margin = (ebitda_val / tot_sales * 100.0) if tot_sales > 0 else 0.0
 
-        st.info(f"⚡ **EBITDA المجمع لقطاع {selected_city}:** {ebitda_val:,.0f} ريال | **هامش EBITDA الموحد:** {ebitda_margin:.1f}%")
+        st.info(f"⚡ **EBITDA قطاع {selected_city}:** {ebitda_val:,.0f} ريال | **هامش EBITDA:** {ebitda_margin:.1f}%")
 
-        fig_ebitda = go.Figure(go.Bar(
+        fig_eb = go.Figure(go.Bar(
             x=df['branch_name'], y=df['net_profit'],
-            marker_color=np.where(df['net_profit'] >= 0, '#10B981', '#EF4444'),
-            text=[f"{val:,.0f}" for val in df['net_profit']], textposition='outside'
+            marker_color=np.where(df['net_profit'] >= 0, '#10B981', '#EF4444')
         ))
-        fig_ebitda.update_layout(
-            title="<b>مساهمة كل فرع في صافي الأرباح التشغيلية للمدينة</b>",
+        fig_eb.update_layout(
             paper_bgcolor="rgba(15, 23, 42, 0.8)", plot_bgcolor="rgba(15, 23, 42, 0.8)",
-            font=dict(color="#CBD5E1"), margin=dict(l=20, r=20, t=40, b=20)
+            font=dict(color="#CBD5E1"), margin=dict(l=20, r=20, t=30, b=20)
         )
-        st.plotly_chart(fig_ebitda, use_container_width=True)
+        st.plotly_chart(fig_eb, use_container_width=True)
 
-    # 3. تبويب القياس المعياري وترتيب فروع المدينة
     with tab_bench:
         df_sorted = df.sort_values(by='target_achieved', ascending=False)
-
-        fig_bench = go.Figure()
-        fig_bench.add_trace(go.Bar(
+        fig_bench = go.Figure(go.Bar(
             y=df_sorted['branch_name'], x=df_sorted['target_achieved'],
-            orientation='h', marker_color='#10B981', name='نسبة إنجاز الفرع'
+            orientation='h', marker_color='#10B981'
         ))
-        fig_bench.add_vline(x=100.0, line_dash="dash", line_color="#F59E0B", annotation_text="المستهدف (100%)")
-
+        fig_bench.add_vline(x=100.0, line_dash="dash", line_color="#F59E0B")
         fig_bench.update_layout(
-            title="<b>ترتيب فروع المدينة حسب نسبة تحقيق المستهدف</b>",
             paper_bgcolor="rgba(15, 23, 42, 0.8)", plot_bgcolor="rgba(15, 23, 42, 0.8)",
-            font=dict(color="#CBD5E1"), margin=dict(l=20, r=20, t=40, b=20)
+            font=dict(color="#CBD5E1"), margin=dict(l=20, r=20, t=30, b=20)
         )
         st.plotly_chart(fig_bench, use_container_width=True)
-
-
-def render_city_branches_table(branches_data, selected_city):
-    """عرض جدول بيانات الفروع التابعة للمدينة بالتنسيق المتقدم"""
-    st.markdown(f"#### 📋 قائمة البيانات الممالية التفصيلية لفروع: <span style='color:#38BDF8;'>{selected_city}</span>", unsafe_allow_html=True)
-    
-    st.dataframe(
-        branches_data,
-        column_config={
-            "branch_code": "كود الفرع",
-            "branch_name": "اسم الفرع",
-            "city": "المدينة",
-            "manager_name": "مدير الفرع",
-            "phone": "رقم التواصل",
-            "actual_sales": st.column_config.NumberColumn("المبيعات (ريال)", format="%.0f ريال"),
-            "target": st.column_config.NumberColumn("المستهدف (ريال)", format="%.0f ريال"),
-            "target_achieved": st.column_config.NumberColumn("نسبة الإنجاز", format="%.1f %%"),
-            "fixed_costs": st.column_config.NumberColumn("ت. ثابتة (ريال)", format="%.0f ريال"),
-            "variable_costs": st.column_config.NumberColumn("ت. متغيرة (ريال)", format="%.0f ريال"),
-            "net_profit": st.column_config.NumberColumn("صافي الربح (ريال)", format="%.0f ريال")
-        },
-        use_container_width=True,
-        hide_index=True
-    )
