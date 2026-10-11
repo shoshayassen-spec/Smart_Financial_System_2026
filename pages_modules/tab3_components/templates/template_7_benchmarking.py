@@ -77,15 +77,15 @@ def render(target_achieved, profit_margin, opex_ratio, return_per_expense_riyal,
 
     # 3. حساب قيم الرادار بأمان كامل
     s1 = max(0.0, min(float(target_achieved), 150.0))
-    s2 = max(0.0, min((float(profit_margin) / 20.0) * 100.0, 150.0))
-    s3 = max(0.0, min(((100.0 - float(opex_ratio)) / 60.0) * 100.0, 150.0))
-    s4 = max(0.0, min((float(return_per_expense_riyal) / 1.25) * 100.0, 150.0))
+    s2 = max(0.0, min((float(profit_margin) / 20.0) * 100.0 if profit_margin else 0.0, 150.0))
+    s3 = max(0.0, min(((100.0 - float(opex_ratio)) / 60.0) * 100.0 if opex_ratio else 0.0, 150.0))
+    s4 = max(0.0, min((float(return_per_expense_riyal) / 1.25) * 100.0 if return_per_expense_riyal else 0.0, 150.0))
 
     categories = ['تحقيق المستهدف', 'هامش الربح', 'كفاءة المصروفات', 'عائد الريال']
     branch_scores = [s1, s2, s3, s4]
     benchmark_scores = [100.0, 100.0, 100.0, 100.0]
 
-    # إغلاق الحلقة بالعودة لأول نقطة لضمان رسم شكل الرادار مغلق ومستقر
+    # إغلاق شكل الرادار
     categories_closed = categories + [categories[0]]
     branch_scores_closed = branch_scores + [branch_scores[0]]
     benchmark_scores_closed = benchmark_scores + [benchmark_scores[0]]
@@ -110,18 +110,20 @@ def render(target_achieved, profit_margin, opex_ratio, return_per_expense_riyal,
         fillcolor='rgba(56, 189, 248, 0.15)'
     ))
 
+    # التنسيق الآمن لتجنب خطأ Plotly Layout Error
     fig.update_layout(
-        polar=dict(
-            radialaxis=dict(visible=True, range=[0, 150], showticklabels=True, tickfont=dict(size=10, color="#94A3B8"), gridcolor="rgba(255, 255, 255, 0.1)"),
-            angularaxis=dict(gridcolor="rgba(255, 255, 255, 0.1)", font=dict(color="#CBD5E1", size=11))
-        ),
-        title=dict(text="<b>🕸️ التقييم الراداري الشامل للفرع مقابل المستهدف المعياري</b>", font=dict(size=16, color="#10B981")),
         paper_bgcolor="rgba(15, 23, 42, 0.8)",
         plot_bgcolor="rgba(15, 23, 42, 0.8)",
         font=dict(color="#CBD5E1"),
+        title=dict(text="<b>🕸️ التقييم الراداري الشامل للفرع مقابل المستهدف المعياري</b>", font=dict(size=16, color="#10B981")),
         showlegend=True,
-        margin=dict(l=40, r=40, t=50, b=40),
-        legend=dict(orientation="h", yanchor="top", y=-0.1, xanchor="center", x=0.5)
+        margin=dict(l=40, r=40, t=50, b=40)
+    )
+    
+    fig.update_polars(
+        bgcolor="rgba(15, 23, 42, 0.8)",
+        radialaxis=dict(visible=True, range=[0, 150], showticklabels=True, tickfont=dict(size=10, color="#94A3B8"), gridcolor="rgba(255, 255, 255, 0.1)"),
+        angularaxis=dict(gridcolor="rgba(255, 255, 255, 0.1)", font=dict(color="#CBD5E1", size=11))
     )
 
     st.plotly_chart(fig, use_container_width=True)
